@@ -27,7 +27,7 @@ def load_results(my_file, interpolate):
         start_time = pd.to_datetime(float(results.iloc[0][0]), unit="s")
         sample_rate = float(results.iloc[1][0])
         results = results[2:]
-        results.index = results.index-1
+        results.index = results.index-2
         results.columns = ['medida']
         # print('start time: {}'.format(start_time))
         # print('sample rate: {}'.format(sample_rate))

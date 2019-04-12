@@ -4,8 +4,7 @@ import matplotlib.pyplot as plt
 from numpy import array as npa
 from matplotlib.dates import DateFormatter
 from trial import csvmanage as cm
-from trial import Ledapy as ledapy
-
+from trial import ledapy
 
 
 def calculateEDAfeatures(EDAdata):
@@ -44,11 +43,11 @@ def plots(EDAdata):
     plt.show()
 
 
-
+'''
 # Prueba:
 directory = '../data/ejemplo'
 EDA = cm.load_results(directory + '/EDA.csv', 0)[10:-60]
 EDA = calculateEDAfeatures(EDA)
 plots(EDA)
 cm.save_results(EDA, 'results.csv')
-
+'''
