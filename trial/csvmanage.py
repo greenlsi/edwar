@@ -21,6 +21,26 @@ def get_date(pandas_time):
     return day, month, year
 
 
+def load_acc(my_file, interpolate):
+    try:
+        results = pd.read_csv(my_file, header=None)
+        start_time = pd.to_datetime(float(results.iloc[0][0]), unit="s")
+        sample_rate = float(results.iloc[1][0])
+        results = results[2:]
+
+        results.index = results.index-2
+        results.columns = ['x', 'y', 'z']
+        # print('start time: {}'.format(start_time))
+        # print('sample rate: {}'.format(sample_rate))
+        results = interpolate_data(results, sample_rate, start_time, interpolate, 0)
+
+        return results
+    except IOError:
+        raise IOError('File {} not Found'.format(my_file))
+    except Exception:
+        raise Exception('Unexpected error in reading {}'.format(my_file))
+
+
 def load_results(my_file, interpolate):
     try:
         results = pd.read_csv(my_file, header=None)
@@ -31,7 +51,7 @@ def load_results(my_file, interpolate):
         results.columns = ['medida']
         # print('start time: {}'.format(start_time))
         # print('sample rate: {}'.format(sample_rate))
-        results = interpolate_data(results, sample_rate, start_time, interpolate)
+        results = interpolate_data(results, sample_rate, start_time, interpolate, 1)
         return results
     except IOError:
         raise IOError('File {} not Found'.format(my_file))
@@ -48,7 +68,7 @@ def save_results(my_data, my_file):
         raise Exception("Error in writing {}".format(my_file))
 
 
-def interpolate_data(data, sample_rate, start_time, interpolate):
+def interpolate_data(data, sample_rate, start_time, interpolate, to_filter):
     if sample_rate == 1:
         data.index = pd.date_range(start=start_time, periods=len(data), freq='1000L')
     elif sample_rate == 2:
@@ -67,7 +87,8 @@ def interpolate_data(data, sample_rate, start_time, interpolate):
     # Interpolate all empty values
     if interpolate:
         data = interpolate_empty_values(data)
-    data['filtered'] = butter_lowpass_filter(data['medida'], 0.05, 10, 1)
+    if to_filter:
+        data['filtered'] = butter_lowpass_filter(data['medida'], 0.05, 10, 1)
     data = data.resample("1000L").mean()
     return data
 

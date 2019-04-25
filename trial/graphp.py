@@ -49,10 +49,7 @@ def printGraph(df):
             value=dates[0],
             labelStyle={'display': 'inline-block'}
         ),
-        dcc.Graph(
-            id='my-graph'
-            ),
-
+        dcc.Graph(id='graph-1')
     ],
     className="container",
     style={
@@ -61,12 +58,12 @@ def printGraph(df):
         'marginLeft':0, 'marginRight':0
     })
 
-    @app.callback(Output('my-graph', 'figure'),
+    @app.callback(Output('graph-1', 'figure'),
                   [Input('my-dropdown', 'value'),
                   Input('my-radioitems', 'value')
                   ])
 
-    def update_graph(selected_dropdown_value, selected_radioitem_value):
+    def update_graph_1(selected_dropdown_value, selected_radioitem_value):
         # dff = df[df['Stock'] == selected_dropdown_value]
         if (selected_dropdown_value == 'EDA'):
             dff = df.get(selected_radioitem_value)[0]
@@ -84,7 +81,7 @@ def printGraph(df):
         return {
             'data': [{
                 # 'x': (dff[2:].index-2)/(dff.medida[1]*3600),
-                'x':dff.index,
+                'x': dff.index,
                 'y': dff.medida,
                 'line': {
                     'width': 3,
