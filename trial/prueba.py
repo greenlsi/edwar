@@ -1,6 +1,6 @@
 
-import Ledapy as ledapy
-import csvmanage as cm
+from trial import ledapy
+from trial import csvmanage as cm
 from matplotlib.dates import DateFormatter
 import matplotlib.pyplot as plt
 from numpy import array as npa
