@@ -21,7 +21,7 @@ def calculate_xyz(data):
     return xyz_f
 
 
-def filt_accel(data, xyz, m=20, step=1.0, leak=0.0, init_coeffs=None):
+def filt_accel(data, xyz, m=48, step=1.0, leak=0.0, init_coeffs=None):
     d = data['EDA'].values
     u = xyz
 
@@ -103,13 +103,13 @@ def plot_adapt_filt(data, y, e, xyz):
     axs[3].plot(xyz, '#31d63c', label='xyz')
     axs[3].set_title('accelerometer signal')
     axs[3].legend(loc='upper right')
+    axs[3].set_ylim(0.8)
     plt.show()
 
 
 if __name__ == '__main__':
-    directory = '../data/ejemplo'
-    win = 6000
-    eda_data = cm.load_results(directory)[7500:8500]  # [1500:2500]  # [6000:7000]#[7800:8600]
+    directory = '../data/ejemplo3'
+    eda_data = cm.load_results(directory)[0:10000]  # [6000:7000]   # [7500:8500]  # [1500:2500]  # [6000:7000]#[7800:8600]
     accel = calculate_xyz(eda_data)
     M = 48     # FIR filter taps
     STEP = 1   # FIR filter step

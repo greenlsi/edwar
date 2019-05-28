@@ -7,7 +7,7 @@ from numpy import array as npa
 
 
 
-directory = '../data/ejemplo'
+directory = '../data/ejemplo1'
 sampling_rate = 100
 EDAdata = cm.load_results(directory + '/EDA.csv', 0)[10:-60]
 rawdata = npa(EDAdata['filtered'], dtype='float64')

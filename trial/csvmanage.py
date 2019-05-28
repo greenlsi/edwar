@@ -1,6 +1,6 @@
 import pandas as pd
 import os
-from trial.eda_explorer.load_files import get_user_input, loadData_E4
+from trial.eda_explorer.load_files import get_user_input, loadData_E4, butter_lowpass_filter
 
 
 def get_input(prompt):
@@ -116,7 +116,7 @@ def load_results(filepath):
     except IOError:
         raise IOError("File {} not Found".format(filepath))
     except Exception:
-        raise Exception("Error in writing {}".format(filepath))
+        raise Exception("Error in reading {}".format(filepath))
     e4_data = e4_data.join(hr_data, how='inner')
     e4_data = e4_data.join(bvp_data, how='inner')
     # min_length = min(len(e4_data), len(hr_data))
@@ -143,6 +143,8 @@ def downsample_to_1min(e4_data):
 
 
 if __name__ == "__main__":
-    data = load_results("../data/ejemplo")
-    data = downsample_to_1min(data)
-    print(data['BVP'])
+
+    data = load_results("../data/ejemplo4")
+    # data = downsample_to_1min(data)
+    print(data)
+

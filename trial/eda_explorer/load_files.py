@@ -115,18 +115,15 @@ def loadData_E4(filepath):
     eda_data = _loadSingleFile_E4(os.path.join(filepath,'EDA.csv'),["EDA"],4,"250L")
     # Get the filtered data using a low-pass butterworth filter (cutoff:1hz, fs:8hz, order:6)
     eda_data['filtered_eda'] =  butter_lowpass_filter(eda_data['EDA'], 1.0, 8, 6)
-
     # Load ACC data
     acc_data = _loadSingleFile_E4(os.path.join(filepath,'ACC.csv'),["AccelX","AccelY","AccelZ"],32,"31250U")
     # Scale the accelometer to +-2g
     acc_data[["AccelX","AccelY","AccelZ"]] = acc_data[["AccelX","AccelY","AccelZ"]]/64.0
-
     # Load Temperature data
     temperature_data = _loadSingleFile_E4(os.path.join(filepath,'TEMP.csv'),["Temp"],4,"250L")
     
     data = eda_data.join(acc_data, how='outer')
     data = data.join(temperature_data, how='outer')
-
     # E4 sometimes records different length files - adjust as necessary
     min_length = min(len(acc_data), len(eda_data), len(temperature_data))
 

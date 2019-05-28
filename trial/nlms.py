@@ -140,8 +140,7 @@ def nlms(u, d, m, step, eps=0.001, leak=0, init_coeffs=None, n=None,
     e = np.zeros(n)  # Error signal
     w = init_coeffs  # Initial filter coeffs
     leakstep = (1 - step*leak)
-    if return_coeffs:
-        wopt = np.zeros((n, m))  # Matrix to hold coeffs for each iteration
+    wopt = np.zeros((n, m))  # Matrix to hold coeffs for each iteration
 
     # Perform filtering
     for n in range(n):
