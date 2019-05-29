@@ -100,30 +100,34 @@ def plot_josue_graph(var_eda, var_acc, correlation, window, d):
     plt.show()
 
 
-def plot_eda_histogram(data, window, directory):
+def plot_eda_histogram(data, window, d):
     eda = data['EDA'].values
     max_iter = len(eda) - (window - 1)
     var_eda = np.zeros(max_iter)
     for i in range(0, max_iter):
         var_eda[i] = np.var(eda[i:(i + window - 1)])
-    print(var_eda)
-    plt.hist(var_eda, 30000)
+    plt.hist(var_eda, 70000)
     print('histogram ready')
-    plt.axis([0, 0.1, 0, 200])
-    plt.title('{}\n window = {}'.format(directory, window))
+    xmin = 0
+    xmax = 0.1
+    ymin = 0
+    ymax = 200
+    plt.axis([xmin, xmax, ymin, ymax])
+    plt.gca().xaxis.set_major_locator(plt.MaxNLocator(10))
+    plt.gca().xaxis.set_minor_locator(plt.MaxNLocator(100))
+    plt.grid(b=True, which='both', alpha=0.7)
+    plt.title('{}\n window = {}'.format(d, window))
     plt.show()
     return var_eda
 
 
 if __name__ == '__main__':
-    directory = '../data/ejemplo2'
+    directory = '../data/ejemplo4'
     w = 8
     delay = 0
     print('loading data........................................0%')
     DATA = cm.load_results(directory)
-    print(DATA)
     var_EDA = plot_eda_histogram(DATA, w, directory[8:])
-    print(var_EDA)
     '''
     print('calculting correlation & printing graphs per axis...1%')
     # var_X, var_Y, var_Z = calculate_correlation_per_axis(DATA, w, delay)
