@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from matplotlib.dates import DateFormatter
 from datetime import timedelta
 from trial.nlms import nlms
-from trial import csvmanage as cm
+import trial.csvmanage as cm
 from trial.eda_explorer.load_files import butter_lowpass_filter
 from trial.art_detect import detect_arts
 
@@ -51,7 +51,7 @@ def plot_adapt_filt(data, y, e, xyz):
     fig, axs = plt.subplots(4, 1, figsize=(20, 20))
     axs[0].plot(y.index, y['EDA'], 'b', label='EDA')
     axs[0].plot(y.index, y['filtered_eda'], 'g', label='filtered EDA')
-    for i in range(0, len(feature_labels_corrected) - 1):
+    for i in range(0, len(feature_labels_corrected)):
         start = feature_labels_corrected.index[i]
         end = start + timedelta(seconds=5)
         if feature_labels_corrected[classifier[0]][i] == -1:
@@ -109,9 +109,9 @@ def plot_adapt_filt(data, y, e, xyz):
 
 if __name__ == '__main__':
     directory = '../data/ejemplo3'
-    eda_data = cm.load_results(directory)[0:10000]  # [6000:7000]   # [7500:8500]  # [1500:2500]  # [6000:7000]#[7800:8600]
+    eda_data = cm.load_results(directory)[0:10000]  # [6000:7000] # [7500:8500] # [1500:2500 # [6000:7000] # [7800:8600]
     accel = calculate_xyz(eda_data)
-    M = 48     # FIR filter taps
+    M = 12     # FIR filter taps
     STEP = 1   # FIR filter step
     LEAK = 0   # FIR filter leakage factor
     output, error, coeffs = filt_accel(eda_data, accel, m=M, step=STEP, leak=LEAK)

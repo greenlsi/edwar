@@ -1,6 +1,6 @@
 import pandas as pd
 import os
-from trial.eda_explorer.load_files import get_user_input, loadData_E4, butter_lowpass_filter
+from trial.eda_explorer.load_files import get_user_input, loadData_E4
 
 
 def get_input(prompt):
@@ -8,7 +8,7 @@ def get_input(prompt):
 
 
 def get_seconds_and_microseconds(pandas_time):
-    return pandas_time.second + pandas_time.microsecond * 1e-6
+    return pandas_time.seconds + pandas_time.microseconds * 1e-6
 
 
 def get_date(pandas_time):
@@ -147,4 +147,3 @@ if __name__ == "__main__":
     data = load_results("../data/ejemplo4")
     # data = downsample_to_1min(data)
     print(data)
-
