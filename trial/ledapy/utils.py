@@ -159,7 +159,7 @@ def smooth(data, winwidth_in):
         raise ValueError('data is not a vector. Shape: ' + str(data.shape))
     paddata = npa(np.hstack((data[0], data, data[-1])))  # pad to remove border errors
     winwidth = int(np.floor(winwidth_in // 2) * 2)  # force even winsize for odd window
-    window = norm.pdf(np.arange(0, winwidth + 1), winwidth // 2, winwidth // 8)
+    window = norm.pdf(np.arange(0, winwidth + 1), winwidth / 2, winwidth / 8)
     window = window / np.sum(window)  # normalize window
 
     data_ext = np.hstack(((np.zeros(winwidth // 2) + 1) * paddata[0],

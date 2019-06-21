@@ -1,8 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
 import pywt
 from matplotlib.dates import DateFormatter
 from trial import csvmanage as cm
+from trial.eda_explorer.load_files import butter_lowpass_filter
 
 
 def accelerometer_study(acc_data):
@@ -35,38 +37,49 @@ def evaluate_reliability_acc(data, size_window=10):
     return data
 
 
-def correct_eda(eda_data):
-    eda = np.array(eda_data['EDA'], dtype='float64')
+def correct_eda(eda_data, thr, test=0):
+    eda = eda_data['EDA'].values
+    k = 0
+    olen = len(eda)
+    while k*np.power(2, 7) < olen:
+        k = k + 1
+    diff = k*np.power(2, 7) - olen
+    eda = np.pad(eda, (0, diff), 'constant', constant_values=0)
     type_of_wavelet = 'haar'
-    # print(pywt.swt_max_level(len(EDA)))
     coeff = pywt.swt(eda, type_of_wavelet, 7, 0, 0)
-    eda_data['od1'] = coeff[0][1]
+    od1 = coeff[0][1][0:olen]
     for i in range(0, len(coeff[0][0])):
         for j in range(0, len(coeff)):
-            if abs(coeff[j][1][i]) > 5 or eda_data['unreliable'][i]:
+            if abs(coeff[j][1][i]) > thr:
                 coeff[j][1][i] = 0
 
-    eda_corrected = pywt.iswt(coeff, type_of_wavelet)
-    eda_data['corrected'] = eda_corrected
-    eda_data['a1'] = coeff[0][0]
-    eda_data['a2'] = coeff[1][0]
-    eda_data['a3'] = coeff[2][0]
-    eda_data['a4'] = coeff[3][0]
-    eda_data['a5'] = coeff[4][0]
-    eda_data['a6'] = coeff[5][0]
-    eda_data['a7'] = coeff[6][0]
-    eda_data['d1'] = coeff[0][1]
-    eda_data['d2'] = coeff[1][1]
-    eda_data['d3'] = coeff[2][1]
-    eda_data['d4'] = coeff[3][1]
-    eda_data['d5'] = coeff[4][1]
-    eda_data['d6'] = coeff[5][1]
-    eda_data['d7'] = coeff[6][1]
+    eda_corrected = pywt.iswt(coeff, type_of_wavelet)[0:olen]
+    out = pd.DataFrame(np.array(eda_corrected), index=eda_data['EDA'].index)
+    out.columns = ['EDA']
+    out['filtered_eda'] = butter_lowpass_filter(out['EDA'], 1.0, 8, 6)
 
-    return eda_data
+    if test:
+        out['od1'] = od1
+        out['a1'] = coeff[0][0][0:olen]
+        out['a2'] = coeff[1][0][0:olen]
+        out['a3'] = coeff[2][0][0:olen]
+        out['a4'] = coeff[3][0][0:olen]
+        out['a5'] = coeff[4][0][0:olen]
+        out['a6'] = coeff[5][0][0:olen]
+        out['a7'] = coeff[6][0][0:olen]
+
+        out['d1'] = coeff[0][1][0:olen]
+        out['d2'] = coeff[1][1][0:olen]
+        out['d3'] = coeff[2][1][0:olen]
+        out['d4'] = coeff[3][1][0:olen]
+        out['d5'] = coeff[4][1][0:olen]
+        out['d6'] = coeff[5][1][0:olen]
+        out['d7'] = coeff[6][1][0:olen]
+
+    return out
 
 
-def _plot_eda(data, reliability):
+def _plot_eda(data, out, reliability):
     data_min = min(data['EDA'])
     data_max = max(data['EDA'])
     day, month, year = cm.get_date(data.index[0])
@@ -84,7 +97,7 @@ def _plot_eda(data, reliability):
         axs[0].plot(data.index, data['unreliable']*data_max*1.15, '#cc7a7a', label='not reliable', alpha=0.5)
         axs[0].fill_between(data.index, data['unreliable']*data_max*1.15, color='#cc7a7a', alpha=0.5)
     axs[0].plot(data.index, data['EDA'], '#9F33BD', label='original')
-    axs[0].plot(data.index, data['corrected'], '#2e352c', label='corrected', alpha=0.8)
+    axs[0].plot(data.index, out['EDA'], '#2e352c', label='corrected', alpha=0.8)
     axs[0].legend(loc='upper right')
 
     axs[1].set_title('Accelerometer data')
@@ -104,42 +117,45 @@ def _plot_eda(data, reliability):
     axs[2].set_xlim([data.index[0], data.index[-1]])
     axs[2].set_title('Approximation coefficients')
     # y_min = min(0, data_min) - (data_max - data_min) * 0.1
-    axs[2].set_ylim([min(min(data['a1']), min(data['a7'])),
-                     max(max(data['a1']), max(data['a7']))])
+    axs[2].set_ylim([min(min(out['a1']), min(out['a1'])),
+                     max(max(out['a1']), max(out['a1']))])
     axs[2].set_ylabel('$\mu$S')
     plt.gcf().axes[2].xaxis.set_major_formatter(formatter)
     axs[2].set_xlabel('Time')
-    axs[2].plot(data.index, data['a1'], '#cdadd6')  # mas claro
-    axs[2].plot(data.index, data['a2'], '#c394d1')
-    axs[2].plot(data.index, data['a3'], '#b667ce')
-    axs[2].plot(data.index, data['a4'], '#ae44ce')
-    axs[2].plot(data.index, data['a5'], '#9e1fc4')
-    axs[2].plot(data.index, data['a6'], '#700191')
-    axs[2].plot(data.index, data['a7'], '#48005e')  # mas oscuro
-
-    axs[3].set_xlim([data.index[0], data.index[-1]])
+    axs[2].plot(out.index, out['a1'], '#cdadd6')  # mas claro
+    axs[2].plot(out.index, out['a2'], '#c394d1')
+    axs[2].plot(out.index, out['a3'], '#b667ce')
+    axs[2].plot(out.index, out['a4'], '#ae44ce')
+    axs[2].plot(out.index, out['a5'], '#9e1fc4')
+    axs[2].plot(out.index, out['a6'], '#700191')
+    axs[2].plot(out.index, out['a7'], '#48005e')  # mas oscuro
+    # axs[3].set_xlim([data.index[0], data.index[-1]])
     axs[3].set_title('Detail coefficients')
     # y_min = min(0, data_min) - (data_max - data_min) * 0.1
-    axs[3].set_ylim([min(min(data['d1']), min(data['d1'])),
-                     max(max(data['d1']), max(data['d1']))])
+    axs[3].set_ylim([min(min(out['d1']), min(out['d7'])),
+                     max(max(out['d1']), max(out['d7']))])
     axs[3].set_ylabel('$\mu$S')
     plt.gcf().axes[3].xaxis.set_major_formatter(formatter)
     axs[3].set_xlabel('Time')
-    axs[3].plot(data.index, data['d2'], '#000000')
+    axs[3].plot(out.index, out['d1'], '#000000')
 
     plt.figure(2, figsize=(20, 10))
-    plt.hist(data['od1'], bins='auto', label='initial d1', color='#0011ff')
-    plt.hist(data['d1'], bins='auto', label='final d1', color='#ff0000')
+    plt.hist(out['od1'], bins='auto', label='initial d1', color='#0011ff')
+    plt.hist(out['d1'], bins='auto', label='final d1', color='#ff0000')
     plt.legend(loc='upper right')
     plt.title('Histogram of detail coefficients')
     plt.show()
 
 
 if __name__ == '__main__':
+    testing = 1
     directory = '../data/ejemplo1'
-    EDAdata = cm.load_results(directory)[0:8000]
-    EDAdata = cm.downsample_to_1hz(EDAdata)
+    EDAdata = cm.load_results(directory)[0:10000]
     evaluate_reliability_acc(EDAdata)
-    EDAdata = correct_eda(EDAdata)
-    _plot_eda(EDAdata, 1)
+    EDAout = correct_eda(EDAdata, 1.5, testing)
+
+    if testing:
+        _plot_eda(EDAdata, EDAout, 1)
+    else:
+        print(EDAout)
     # accelerometer_study(ACCdata)

@@ -9,10 +9,10 @@ from trial import ledapy
 
 def calculate_eda_features(eda_data):
 
-    sampling_rate = 100
-    rawdata = npa(eda_data['filtered_eda'], dtype='float64')
+    sampling_rate = 1/cm.get_seconds_and_microseconds(eda_data.index[1]-eda_data.index[0])
+    rawdata = npa(eda_data['EDA'], dtype='float64')
     rawdata = rawdata.flatten()
-    phasicdata = ledapy.runner.getResult(rawdata, 'phasicdata', sampling_rate, downsample=1, optimisation=2)
+    phasicdata = ledapy.runner.getResult(rawdata, 'phasicdata', sampling_rate, downsample=1, optimisation=0)
     phasic = phasicdata.tolist()
     eda_data['phasic'] = phasic
     # EDAdata['tonic'] = EDAdata['filtered'] - EDAdata['phasic']
@@ -53,6 +53,7 @@ if __name__ == '__main__':
     directory = '../data/ejemplo1'
     EDA = cm.load_results(directory)
     EDA = cm.downsample_to_1hz(EDA)
+
     EDA = calculate_eda_features(EDA)
     plot_scl(EDA)
-    cm.save_results(EDA, 'results.csv')
+    # cm.save_results(EDA, 'results.csv')
