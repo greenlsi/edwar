@@ -21,7 +21,7 @@ def calculate_xyz(data):
     return xyz_f
 
 
-def filt_accel(data, xyz, m=48, step=1.0, leak=0.0, init_coeffs=None):
+def filt_accel(data, xyz, m=48, step=1.0, leak=0.0, init_coeffs=None, adaptive_step_factor=0.0001):
     d = data['EDA'].values
     u = xyz
     if init_coeffs is None:
@@ -30,8 +30,9 @@ def filt_accel(data, xyz, m=48, step=1.0, leak=0.0, init_coeffs=None):
     else:
         wi = init_coeffs
 
-    y, e, w = nlms(u, d, m, step, init_coeffs=wi, leak=leak, adaptive_step=True)
-    out = pd.DataFrame(np.concatenate((d[0:m - 1], y)), index=data['EDA'].index)
+    y, e, w = nlms(u, d, m, step, init_coeffs=wi, leak=leak, adaptive_step_factor=adaptive_step_factor)
+    out = pd.DataFrame(y, index=data['EDA'].index[m-1:])
+    '''np.concatenate((d[0:m - 1], y))'''
     out.columns = ['EDA']
     out['filtered_eda'] = butter_lowpass_filter(out['EDA'], 1.0, 8, 6)
     # out['filtered_eda'][0:4*6] = out['EDA'][0:4*6]  # margin to stabilize filter

@@ -4,7 +4,7 @@ from trial.eda_explorer.load_files import get_user_input, loadData_E4
 
 
 def get_input(prompt):
-    get_user_input(prompt)
+    return input(prompt)
 
 
 def get_seconds_and_microseconds(pandas_time):

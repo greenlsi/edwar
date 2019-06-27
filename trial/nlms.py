@@ -2,7 +2,7 @@ import numpy as np
 
 
 def nlms(u, d, m, step, eps=0.001, leak=0, init_coeffs=None, n=None,
-         return_coeffs=False, adaptive_step=0):
+         return_coeffs=False, adaptive_step_factor=0.0001):
     """
     Perform normalized least-mean-squares (NLMS) adaptive filtering on u to
     minimize error given by e=d-y, where y is the output of the adaptive
@@ -43,10 +43,9 @@ def nlms(u, d, m, step, eps=0.001, leak=0, init_coeffs=None, n=None,
         N x M matrix. Does not include the initial coefficients. If false, only
         the latest coefficients in a vector of length M is returned. Defaults
         to false.
-    adaptive_step : boolean
-        If true, it will change step value for every iteration according to
-        variance of u signal and filter order m. If false, only passed step
-        value used
+    adaptive_step_factor : float
+        Factor to calculate step value for every iteration according to variance
+        of u signal and filter order m. Defaults to 0.0001.
 
     Returns
     -------
@@ -151,9 +150,9 @@ def nlms(u, d, m, step, eps=0.001, leak=0, init_coeffs=None, n=None,
         norm_factor = 1./(np.dot(x, x) + eps)
 
         # Miguel: adaptive step :)
-        if adaptive_step:
+        if adaptive_step_factor is not None:
             # adaptive step
-            step = min(1, 0.0001 / (m * np.var(x)))
+            step = min(1, adaptive_step_factor / (m * np.var(x)))
             # step = max(step, 0.1)
             # print("n: " + str(n) +", sigma: " + str(np.var(x)) + ", step: " + str(step))
 

@@ -125,9 +125,9 @@ dmypy.json
 #Pycharm stuff
 .idea/
 data/empatica/
-data/ejemplo2
-data/ejemplo3
-data/ejemplo4
+#data/ejemplo2
+#data/ejemplo3
+#data/ejemplo4
 
 #Code not relevant
 prueba.py

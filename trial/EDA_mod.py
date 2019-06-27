@@ -6,8 +6,8 @@ from trial import csvmanage as cm
 
 def eda_module(data):
     accel = calculate_xyz(data)
-    output, error, coeffs = filt_accel(data, accel, m=M, step=STEP, leak=LEAK)
-    output = correct_eda(output, 1.5)
+    output, error, coeffs = filt_accel(data, accel, m=M, step=STEP, leak=LEAK,  adaptive_step_factor=0.001)
+    # output = correct_eda(output, 1.5)
     calculate_eda_features(output)
     return output
 
