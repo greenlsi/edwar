@@ -4,7 +4,12 @@ import sys
 
 import mysql.connector as sql
 
-from trial.csvmanage import get_input
+from trial.csvmanage import get_input, load_results
+
+
+def timestamp_tranform(timestamp):
+    date_time = timestamp.strftime("%Y-%m-%d %H:%M:%S")
+    return date_time
 
 
 def connect(user, pwd, host='108.128.85.44', port=3306):
@@ -106,11 +111,21 @@ def select_database(cursor):
             else:
                 print("\n\t(!) Something went wrong: {}".format(err))
     else:
-        index = int(get_input('Select database (0, 1, 2, ..): '))
-        while index >= i:
-            index = int(get_input('\n\t(!) Something went wrong. Select number between 0 and {}: '.format(i - 1)))
-        db = databases[index]
-
+        while db is None:
+            db_selected = get_input('Select database: ')
+            try:
+                index = int(db_selected)
+                if index >= i:
+                    print('\n\t(!) Something went wrong. Select number between 0 and {}: '.format(i - 1))
+                else:
+                    db = databases[index]
+            except ValueError:
+                try:
+                    index = databases.index(db_selected)
+                except ValueError:
+                    print("\n\t(!) Database not found")
+                else:
+                    db = databases[index]
     if db:
         try:
             cursor.execute("USE {}".format(db))
@@ -124,7 +139,10 @@ def select_database(cursor):
 def show_tables(cursor, db, to_print):
     if to_print:
         print('Tables in {}'.format(db))
-    cursor.execute("SHOW TABLES")
+    try:
+        cursor.execute("SHOW TABLES")
+    except Exception as err:
+        print("\n\t(!) Something went wrong: {}".format(err))
     tables = []
     i = 0
     for x in cursor:
@@ -144,9 +162,24 @@ def delete_table(cursor, db, tables):
             return 0
         else:
             try:
-                index = tables.index(tb)
+                index = int(tb)
+                tb = tables[index]
             except ValueError:
-                print("\n\t(!) Table not found")
+                try:
+                    index = tables.index(tb)
+
+                except ValueError:
+                    print("\n\t(!) Table not found")
+                else:
+                    a = get_input('{} selected. Are you sure you want to delete it? (y/n): '.format(tables[index]))
+                    if a == 'y':
+                        try:
+                            cursor.execute("DROP TABLE IF EXISTS {}".format(tables[index]))
+                            print('table {} deleted from {}'.format(tables[index], db))
+                        except Exception as err:
+                            print("\n\t(!) Something went wrong: {}".format(err))
+                    else:
+                        print('delete canceled')
             else:
                 a = get_input('{} selected. Are you sure you want to delete it? (y/n): '.format(tables[index]))
                 if a == 'y':
@@ -184,6 +217,76 @@ def create_table(cursor, db):
     return tb
 
 
+def insert(cursor, conn, tb, values):
+    columns = '('
+    count = 0
+    try:
+        cursor.execute("DESCRIBE {}".format(tb))
+        for x in cursor:
+            columns += (x[0] + ', ')
+            count += 1
+        new = list(columns)
+        new[-2] = ')'
+        new[-1] = ''
+        columns = ''.join(new)
+    except Exception as err:
+        print("\n\t(!) Something went wrong: {}".format(err))
+        return 1
+    # print(columns)
+    msg = "\n\t(!) Something went wrong: {} values but table {} has {} columns".format(len(values[0]), tb, count)
+    if len(values[0]) != count:
+        print(msg)
+        return 1
+    msg1 = ''
+    try:
+        if len(values)-1:
+            msg1 = "INSERT INTO {} {} VALUES {}".format(tb, columns, values)
+            cursor.executemany(msg1)
+        else:
+            msg1 = "INSERT INTO {} {} VALUES {}".format(tb, columns, values[0])
+            cursor.execute(msg1)
+    except Exception as err:
+        print("\n\t(!) Something went wrong: {}\n\torder: {}".format(err, msg1))
+        return 1
+
+    conn.commit()
+
+    print(cursor.rowcount, "record(s) inserted.")
+    return 0
+
+
+def delete(cursor, conn, tb, condition):
+    msg1 = ''
+    try:
+        msg1 = "DELETE FROM {} WHERE {}".format(tb, condition)
+        cursor.execute(msg1)
+    except Exception as err:
+        print("\n\t(!) Something went wrong: {}\n\torder: {}".format(err, msg1))
+        return 1
+    a = get_input("{} record(s) will be deleted. Are you sure? (y/n)".format(cursor.rowcount))
+    if a == 'y':
+        conn.commit()
+        print(cursor.rowcount, "record(s) deleted")
+    else:
+        print(cursor.rowcount, "record(s) delete canceled")
+        cursor.execute("ROLLBACK")
+
+    return 0
+
+
+def insert_features(cursor, conn, values):
+    tb = 'features'
+    if type(values) is not list:
+        print("\n\t(!) Something went wrong: parameter values in function insert_features must be a list")
+        return 1
+    if len(values) != 5:
+        print("\n\t(!) Something went wrong: parameter values in function insert_features must be a list")
+    if values[2] != 'EDA' or 'SCL' or 'SCR':
+        print("\n\t(!) Something went wrong: element data_type in values must be EDA, SCL or SCR")
+        return 1
+    values[3] = timestamp_tranform(values[3])
+
+
 def finish(cursor):
     fail = disconnect(cursor)
     if not fail:
@@ -191,8 +294,10 @@ def finish(cursor):
 
 
 if __name__ == '__main__':
-    Help = '''\ncommand show to see list of tables in database selected\ncommand create to create table
-command delete to delete table\ncommand exit to terminate program\n'''
+    directory = '../data/ejemplo1'
+    EDA = load_results(directory)[0:100]
+    Help = "\ncommand show to see list of tables in database selected\ncommand create to create table \ncommand " \
+           "drop to delete table\ncommand exit to terminate program\n "
     finished = 0
     database = None
     print('\nWelcome to data base manager')
@@ -242,8 +347,14 @@ command delete to delete table\ncommand exit to terminate program\n'''
                 if 'create' in cmd:
                     table = create_table(mycursor, database)
                     correct = 1
-                if 'delete' in cmd:
+                if 'drop' in cmd:
                     table = delete_table(mycursor, database, Tables)
+                    correct = 1
+                if 'insert' in cmd:
+                    insert(mycursor, connection, 'features', [('MG0319029', '029051', 0, 0, 0)])
+                    correct = 1
+                if 'delete' in cmd:
+                    delete(mycursor, connection, 'features', "ts = '0000-00-00 00:00:00'")
                     correct = 1
                 if 'help' in cmd:
                     correct = 1

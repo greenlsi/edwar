@@ -1,6 +1,6 @@
 import pandas as pd
 import os
-from trial.eda_explorer.load_files import get_user_input, loadData_E4
+from trial.eda_explorer.load_files import loadData_E4
 
 
 def get_input(prompt):
@@ -144,6 +144,6 @@ def downsample_to_1min(e4_data):
 
 if __name__ == "__main__":
 
-    data = load_results("../data/ejemplo4")
+    data = load_results("../data/ejemplo4")[0:100]
     # data = downsample_to_1min(data)
     print(data)
