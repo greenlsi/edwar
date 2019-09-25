@@ -249,7 +249,6 @@ if __name__ == '__main__':
     # provisional
     directory = '../data/ejemplo1'
     results = load_results(directory)[0:100]
-    header_needed = ['patient_id', 'session_id', 'data_type', 'ts', 'value']
     EDA = results['EDA']
 
     # no provisional
