@@ -8,7 +8,7 @@ setup(
   author='Miguel Merino',                   # Type in your name
   author_email='miguel_dreimal_30@hotmail.com',      # Type in your E-Mail
   url='https://github.com/greenlsi/edwar',   # Provide either the link to your github or to your website
-  download_url='https://github.com/greenlsi/edwar/archive/v_01.tar.gz',
+  download_url='https://github.com/greenlsi/edwar/archive/v_02.tar.gz',
   keywords=['EDA', 'RECOVERY', 'SIGNAL'],   # Keywords that define your package best
   install_requires=[            # I get to this in a second
           'numpy',
