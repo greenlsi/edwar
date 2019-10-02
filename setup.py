@@ -2,26 +2,23 @@ from distutils.core import setup
 setup(
   name='edwar',         # How you named your package folder (MyLib)
   packages=['edwar'],   # Chose the same as "name"
-  version='0.3',      # Start with a small number and increase it with every change you make
+  version='0.6',      # Start with a small number and increase it with every change you make
   license='MIT',        # Chose a license
   description='signal Error Detection for WBSN And data1 Recovery',   # Give a short description about your library
   author='Miguel Merino',                   # Type in your name
   author_email='miguel_dreimal_30@hotmail.com',      # Type in your E-Mail
   url='https://github.com/greenlsi/edwar',   # Provide either the link to your github or to your website
-  download_url='https://github.com/greenlsi/edwar/archive/v_03.tar.gz',
+  download_url='https://github.com/greenlsi/edwar/archive/v_06.tar.gz',
   keywords=['EDA', 'RECOVERY', 'SIGNAL'],   # Keywords that define your package best
   install_requires=[            # I get to this in a second
           'numpy',
           'pandas',
           'matplotlib',
           'datetime',
-          'zipfile',
           'configparser',
-          'pywt',
+          'PyWavelets',
           'scipy',
           'mysql-connector-python',
-          'logging'
-
       ],
   classifiers=[
     'Development Status :: 3 - Alpha',      # Chose either "3 - Alpha", "4 - Beta" or "5 - Production/Stable" as the
