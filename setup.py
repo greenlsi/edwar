@@ -3,7 +3,7 @@ setup(
   name='edwar',         # How you named your package folder (MyLib)
   packages=['edwar'],   # Chose the same as "name"
   version='0.3',      # Start with a small number and increase it with every change you make
-  license='MIT',        # Chose a license from here: https://help.github.com/articles/licensing-a-repository
+  license='MIT',        # Chose a license
   description='signal Error Detection for WBSN And data1 Recovery',   # Give a short description about your library
   author='Miguel Merino',                   # Type in your name
   author_email='miguel_dreimal_30@hotmail.com',      # Type in your E-Mail
