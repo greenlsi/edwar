@@ -3,8 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from datetime import timedelta
 from matplotlib.dates import DateFormatter
-from trial.eda_explorer.EDA_Artifact_Detection_Script import classifyEpochs, createFeatureDF, getSVMFeatures
-from trial import csvmanage as cm
+from edwar.eda_explorer.EDA_Artifact_Detection_Script import classifyEpochs, createFeatureDF, getSVMFeatures
+from edwar import csvmanage as cm
 
 
 def detect_arts(eda_data, classifier_list):

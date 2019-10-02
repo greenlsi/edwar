@@ -3,8 +3,8 @@
 import matplotlib.pyplot as plt
 from numpy import array as npa
 from matplotlib.dates import DateFormatter
-from trial import csvmanage as cm
-from trial import ledapy
+from edwar import csvmanage as cm
+from edwar import ledapy
 
 
 def calculate_eda_features(eda_data):

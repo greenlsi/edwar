@@ -124,11 +124,13 @@ dmypy.json
 
 #Pycharm stuff
 .idea/
-data/empatica/
-#data/ejemplo2
-#data/ejemplo3
-#data/ejemplo4
+data/
 
 #Code not relevant
-prueba.py
-prueba2.py
+acc_correlation_study.py
+loader.py
+testParser.py
+docker.py
+graph.py
+graphp.py
+pruebaVarEDA.m

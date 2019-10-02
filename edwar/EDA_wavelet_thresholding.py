@@ -3,8 +3,8 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import pywt
 from matplotlib.dates import DateFormatter
-from trial import csvmanage as cm
-from trial.eda_explorer.load_files import butter_lowpass_filter
+from edwar import csvmanage as cm
+from edwar.eda_explorer.load_files import butter_lowpass_filter
 
 
 def accelerometer_study(acc_data):

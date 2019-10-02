@@ -3,10 +3,10 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.dates import DateFormatter
 from datetime import timedelta
-from trial.nlms import nlms
-import trial.csvmanage as cm
-from trial.eda_explorer.load_files import butter_lowpass_filter
-from trial.art_detect import detect_arts
+from edwar.nlms import nlms
+import edwar.csvmanage as cm
+from edwar.eda_explorer.load_files import butter_lowpass_filter
+from edwar.art_detect import detect_arts
 
 
 def calculate_xyz(data):

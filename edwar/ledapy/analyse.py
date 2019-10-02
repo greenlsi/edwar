@@ -58,7 +58,6 @@ def cgd(start_val, error_fcn, h, crit_error, crit_iter, crit_h):
 
 
 def cgd_get_gradient(x, error0, error_fcn, h):
-
     """
     Original location: analyze/cg/cgd_get_gradient.m
     """
