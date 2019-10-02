@@ -15,7 +15,6 @@ setup(
           'pandas',
           'matplotlib',
           'datetime',
-          'os',
           'zipfile',
           'configparser',
           'pywt',
