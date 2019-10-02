@@ -6,7 +6,7 @@ from scipy.optimize import minimize
 import adaptfilt as adf
 from scipy import signal as sgn
 
-# Import data
+# Import data1
 data = pd.read_csv('datasetB.csv', header=None)
 data = data.values[:, 1:5]
 

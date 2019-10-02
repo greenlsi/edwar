@@ -140,7 +140,7 @@ def smooth_adapt(data, winwidth_max, err_crit):
         if count > 1:
             scs = smooth(data, iterL[count - 1])
             winwidth = iterL[count - 1]
-        else:  # data already satisfy smoothness criteria
+        else:  # data1 already satisfy smoothness criteria
             scs = data
             winwidth = 0
     return (scs, winwidth)
@@ -156,7 +156,7 @@ def smooth(data, winwidth_in):
     if not isinstance(data, np.ndarray):
         data = npa(data)
     if not len(data.shape) == 1:
-        raise ValueError('data is not a vector. Shape: ' + str(data.shape))
+        raise ValueError('data1 is not a vector. Shape: ' + str(data.shape))
     paddata = npa(np.hstack((data[0], data, data[-1])))  # pad to remove border errors
     winwidth = int(np.floor(winwidth_in // 2) * 2)  # force even winsize for odd window
     window = norm.pdf(np.arange(0, winwidth + 1), winwidth / 2, winwidth / 8)
@@ -164,10 +164,10 @@ def smooth(data, winwidth_in):
 
     data_ext = np.hstack(((np.zeros(winwidth // 2) + 1) * paddata[0],
                           paddata,
-                          (np.zeros(winwidth // 2) + 1) * paddata[-1]))  # extend data to reduce convolution error at beginning and end
+                          (np.zeros(winwidth // 2) + 1) * paddata[-1]))  # extend data1 to reduce convolution error at beginning and end
 
     sdata_ext = convolve(data_ext, window)  # convolute with window
-    sdata = sdata_ext[winwidth + 1: -winwidth - 1]  # cut to data length
+    sdata = sdata_ext[winwidth + 1: -winwidth - 1]  # cut to data1 length
     return sdata
 
 

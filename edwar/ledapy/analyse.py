@@ -184,11 +184,11 @@ def segment_driver(data, remd, ndiff, sigc, segmWidth):
     # Segments: 12 sec, max 3 sec preceding maximum
     for i in range(len(maxL)):
         segm_start = np.maximum(minL[i, 0], maxL[i] - round(segmWidth / 2))
-        segm_end = np.minimum(segm_start + segmWidth - 1, len(data))
+        segm_end = np.minimum(segm_start + segmWidth - 1, len(data1))
 
         # impulse
         segm_idx = range(int(segm_start), int(segm_end))
-        segm_data = npa(data[segm_idx])
+        segm_data = npa(data1[segm_idx])
         segm_idx_above = np.nonzero(segm_idx >= minL[i, 1])
         segm_data[segm_idx_above] = 0
         segmOnset = np.hstack((segmOnset, segm_start))
@@ -226,10 +226,10 @@ def fiterror(data, fit, npar):
     """
     npars = number of unfree parameters with df = n - npar
     'MSE' method only supported
-    data and fit must be numpy arrays (row vectors)
+    data1 and fit must be numpy arrays (row vectors)
     """
     if not isinstance(data, np.ndarray):
-        raise ValueError('data is not a numpy array')
+        raise ValueError('data1 is not a numpy array')
     if not isinstance(fit, np.ndarray):
         raise ValueError('fit is not a numpy array')
 
@@ -317,7 +317,7 @@ def sdeco_interimpulsefit(driver, kernel, minL, maxL):
     tonicGridSize = leda2.settings.tonicGridSize_sdeco
     nKernel = len(kernel)
 
-    # Get inter-impulse data index
+    # Get inter-impulse data1 index
     iif_idx = npa([])
     if len(maxL) > 2:
         for i in range(len(maxL) - 1):
@@ -326,7 +326,7 @@ def sdeco_interimpulsefit(driver, kernel, minL, maxL):
                 gap_idx = minL[i, 1]
             iif_idx = np.hstack((iif_idx, gap_idx))
         iif_idx = np.hstack((minL[1, 0], iif_idx, np.arange(minL[-1, 1], len(driver) - sr)))
-    else:  # no peaks (exept for pre-peak and may last peak) so data represents tonic only, so ise all data for tonic estimation
+    else:  # no peaks (exept for pre-peak and may last peak) so data1 represents tonic only, so ise all data1 for tonic estimation
         iif_idx = np.flatnonzero(t > 0)
 
     iif_idx = [x for x in iif_idx.astype(int)]
@@ -353,7 +353,7 @@ def sdeco_interimpulsefit(driver, kernel, minL, maxL):
         # Estimate groundlevel at groundtime
         if len(np.flatnonzero(t_idx)) > 2:
             groundlevel = np.hstack((groundlevel, (np.minimum(np.mean(iif_data[t_idx]), d[utils.time_idx(t, groundtime[i])]))))
-        else:  # if no inter-impulses data is available ...
+        else:  # if no inter-impulses data1 is available ...
             groundlevel = np.hstack((groundlevel, (np.minimum(np.median(driver[grid_idx]), d[utils.time_idx(t, groundtime[i])]))))
     
     # matlab: d = pchip(x,y,t)
@@ -367,8 +367,8 @@ def sdeco_interimpulsefit(driver, kernel, minL, maxL):
     tonicData = convolve(np.hstack((tonicDriver[0] * np.ones(nKernel), tonicDriver)), kernel)
     tonicData = tonicData[np.arange(nKernel, len(tonicData) - nKernel + 1)]
 
-    # Correction for tonic sections still higher than raw data
-    # Move closest groundtime at time of maximum difference of tonic surpassing data
+    # Correction for tonic sections still higher than raw data1
+    # Move closest groundtime at time of maximum difference of tonic surpassing data1
     for i in range(len(groundtime) - 2, -1, -1):
 
         t_idx = utils.subrange_idx(t, groundtime[i], groundtime[i + 1])
@@ -397,12 +397,12 @@ def sdeco_interimpulsefit(driver, kernel, minL, maxL):
 def signpeak(data, cccrimin, cccrimax, sigc):
     """
     Originally subfunction of segment_driver
-    data, cccrimin, cccrimax must be row vectors of shape (x,)
+    data1, cccrimin, cccrimax must be row vectors of shape (x,)
     """
     if cccrimax is None:
         return (None, None)
     if not isinstance(data, np.ndarray):
-        raise ValueError('data is not a numpy array')
+        raise ValueError('data1 is not a numpy array')
     if not isinstance(cccrimin, np.ndarray):
         raise ValueError('cccrimin is not a numpy array')
     if not isinstance(cccrimax, np.ndarray):

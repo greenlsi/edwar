@@ -18,7 +18,7 @@ def getWaveletData(data):
     This function computes the wavelet coefficients
 
     INPUT:
-        data:           DataFrame, index is a list of timestamps at 8Hz, columns include EDA, filtered_eda
+        data1:           DataFrame, index is a list of timestamps at 8Hz, columns include EDA, filtered_eda
 
     OUTPUT:
         wave1Second:    DateFrame, index is a list of timestamps at 1Hz, columns include OneSecond_feature1, OneSecond_feature2, OneSecond_feature3
@@ -123,9 +123,9 @@ def createFeatureDF(data):
         filepath:           string, path to input file
     OUTPUTS:
         features:           DataFrame, index is a list of timestamps for each 5 seconds, contains all the features
-        data:               DataFrame, index is a list of timestamps at 8Hz, columns include AccelZ, AccelY, AccelX, Temp, EDA, filtered_eda
+        data1:               DataFrame, index is a list of timestamps at 8Hz, columns include AccelZ, AccelY, AccelX, Temp, EDA, filtered_eda
     '''
-    # Load data from q sensor
+    # Load data1 from q sensor
     wave1sec,waveHalf = getWaveletData(data)
 
     # Create 5 second timestamp list
@@ -199,21 +199,21 @@ def getSVMFeatures(key):
 
 def classify(filepath,classifierList,loadDataFunction):
     '''
-    This function wraps other functions in order to load, classify, and return the label for each 5 second epoch of Q sensor data.
+    This function wraps other functions in order to load, classify, and return the label for each 5 second epoch of Q sensor data1.
 
     INPUT:
         filepath:               string, path to input file
         classifierList:         list of strings, either "Binary" or "Multiclass"
-        loadDataFunction:       function, loads sensor data and returns data at 8Hz in a pandas DataFrame indexed by timestamp and at least has 'EDA' column and 'filtered_eda' column
+        loadDataFunction:       function, loads sensor data1 and returns data1 at 8Hz in a pandas DataFrame indexed by timestamp and at least has 'EDA' column and 'filtered_eda' column
     OUTPUT:
         featureLabels:          Series, index is a list of timestamps for each 5 seconds, values of -1, 0, or 1 for artifact, questionable, or clean
-        data:                   DataFrame, only output if fullFeatureOutput=1, index is a list of timestamps at 8Hz, columns include AccelZ, AccelY, AccelX, Temp, EDA, filtered_eda
+        data1:                   DataFrame, only output if fullFeatureOutput=1, index is a list of timestamps at 8Hz, columns include AccelZ, AccelY, AccelX, Temp, EDA, filtered_eda
     '''
     # Constants
     oneHour = 8*60*60 # 8(samp/s)*60(s/min)*60(min/hour) = samp/hour
     fiveSec = 8*5
 
-    # Load data
+    # Load data1
     data = loadDataFunction(filepath)
 
     # Get pickle List and featureNames list
@@ -222,7 +222,7 @@ def classify(filepath,classifierList,loadDataFunction):
         featureNames = getSVMFeatures(classifierList[i])
         featureNameList[i]=featureNames
 
-    # Get the number of data points, hours, and labels
+    # Get the number of data1 points, hours, and labels
     rows = len(data)
     num_labels = int(np.ceil(float(rows)/fiveSec))
     hours = int(np.ceil(float(rows)/oneHour))
@@ -231,7 +231,7 @@ def classify(filepath,classifierList,loadDataFunction):
     labels = -1*np.ones((num_labels,len(classifierList)))
 
     for h in range(hours):
-        # Get a data slice that is at most 1 hour long
+        # Get a data1 slice that is at most 1 hour long
         start = h*oneHour
         end = min((h+1)*oneHour,rows)
         cur_data = data[start:end]
@@ -252,18 +252,18 @@ def classify(filepath,classifierList,loadDataFunction):
 
 def plotData(data,labels,classifierList,filteredPlot=0,secondsPlot=0):
     '''
-    This function plots the Q sensor EDA data with shading for artifact (red) and questionable data (grey).
-        Note that questionable data will only appear if you choose a multiclass classifier
+    This function plots the Q sensor EDA data1 with shading for artifact (red) and questionable data1 (grey).
+        Note that questionable data1 will only appear if you choose a multiclass classifier
 
     INPUT:
-        data:                   DataFrame, indexed by timestamps at 8Hz, columns include EDA and filtered_eda
+        data1:                   DataFrame, indexed by timestamps at 8Hz, columns include EDA and filtered_eda
         labels:                 array, each row is a 5 second period and each column is a different classifier
         filteredPlot:           binary, 1 for including filtered EDA in plot, 0 for only raw EDA on the plot, defaults to 0
         secondsPlot:            binary, 1 for x-axis in seconds, 0 for x-axis in minutes, defaults to 0
 
     OUTPUT:
         [plot]                  the resulting plot has N subplots (where N is the length of classifierList) that have linked x and y axes
-                                    and have shading for artifact (red) and questionable data (grey)
+                                    and have shading for artifact (red) and questionable data1 (grey)
 
     '''
 
@@ -302,7 +302,7 @@ def plotData(data,labels,classifierList,filteredPlot=0,secondsPlot=0):
                 end = start+5.0/scale
                 ax.axvspan(start, end, facecolor='.5', alpha=0.5,edgecolor ='none')
 
-        # Plot filtered data if requested
+        # Plot filtered data1 if requested
         if filteredPlot:
             ax.plot(time_m-.625/scale,data['filtered_eda'], c='g')
             plt.legend(['Raw SC','Filtered SC'],loc=0)
@@ -340,30 +340,30 @@ if __name__ == "__main__":
     else:
         classifierList = ['Binary', 'Multiclass']
 
-    # Classify the data
+    # Classify the data1
     dataType = get_user_input("Data Type (e4 or q or misc): ")
     if dataType=='q':
         filepath = get_user_input("Filepath: ")
-        print("Classifying data for " + filepath)
+        print("Classifying data1 for " + filepath)
         labels,data = classify(filepath,classifierList,loadData_Qsensor)
     elif dataType=='e4':
         filepath = get_user_input("Path to E4 directory: ")
-        print("Classifying data for " + os.path.join(filepath,"EDA.csv"))
+        print("Classifying data1 for " + os.path.join(filepath,"EDA.csv"))
         labels,data = classify(filepath,classifierList,loadData_E4)
     elif dataType=="misc":
         filepath = get_user_input("Filepath: ")
-        print("Classifying data for " + filepath)
+        print("Classifying data1 for " + filepath)
         labels,data = classify(filepath,classifierList,loadData_misc)
     else:
         print("We currently don't support that type of file.")
 
 
-    # Plotting the data
+    # Plotting the data1
     plotDataInput = get_user_input('Do you want to plot the labels? (y/n): ')
 
     if plotDataInput=='y':
         # Include filter plot?
-        filteredPlot = get_user_input('Would you like to include filtered data in your plot? (y/n): ')
+        filteredPlot = get_user_input('Would you like to include filtered data1 in your plot? (y/n): ')
         if filteredPlot=='y':
             filteredPlot=1
         else:
@@ -382,7 +382,7 @@ if __name__ == "__main__":
         print("Remember! Red is for epochs with artifact, grey is for epochs that are questionable, and no shading is for clean epochs")
 
 
-    # Saving the data
+    # Saving the data1
     saveDataInput = get_user_input('Do you want to save the labels? (y/n): ')
 
     if saveDataInput=='y':
@@ -405,5 +405,5 @@ if __name__ == "__main__":
 
     print('--------------------------------')
     print("Please also cite this project:")
-    print("Taylor, S., Jaques, N., Chen, W., Fedor, S., Sano, A., & Picard, R. Automatic identification of artifacts in electrodermal activity data. In Engineering in Medicine and Biology Conference. 2015")
+    print("Taylor, S., Jaques, N., Chen, W., Fedor, S., Sano, A., & Picard, R. Automatic identification of artifacts in electrodermal activity data1. In Engineering in Medicine and Biology Conference. 2015")
     print('--------------------------------')

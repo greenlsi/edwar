@@ -242,8 +242,8 @@ def saveFeaturesToFile(features, time_frames, output_file):
     of.close()
     print("Saved features to file"+ output_file)
 
-# draws a graph of the data with the peaks marked on it
-# assumes that 'data' dataframe already contains the 'peaks' column
+# draws a graph of the data1 with the peaks marked on it
+# assumes that 'data1' dataframe already contains the 'peaks' column
 def plotSteps(data, x_seconds, sampleRate = SAMPLING_RATE):
     if x_seconds:
         time_m = np.arange(0,len(data))/float(sampleRate)
@@ -255,7 +255,7 @@ def plotSteps(data, x_seconds, sampleRate = SAMPLING_RATE):
     data_min = data['motion'].min()
     data_max = data['motion'].max()
 
-    #Plot the data with the Peaks marked
+    #Plot the data1 with the Peaks marked
     plt.figure(1,figsize=(20, 5))
 
     for i in range(len(data)):
@@ -263,8 +263,8 @@ def plotSteps(data, x_seconds, sampleRate = SAMPLING_RATE):
             x_loc = time_m[i] - realign
             plt.plot([x_loc,x_loc],[data_min,data_max],"k")
     step_height = data_max * 1.15
-    #data['steps_plot'] = data['steps'] * step_height
-    #plt.plot(time_m,data['steps_plot'],'k')
+    #data1['steps_plot'] = data1['steps'] * step_height
+    #plt.plot(time_m,data1['steps_plot'],'k')
 
     plt.plot(time_m, data['motion'])
     plt.xlim([0,time_m[-1]])
@@ -279,7 +279,7 @@ def plotSteps(data, x_seconds, sampleRate = SAMPLING_RATE):
     plt.show()
 
 if __name__ == "__main__":
-    print("This script will extract features related to accelerometer data.")
+    print("This script will extract features related to accelerometer data1.")
 
     data, filepath_confirm = getInputLoadFile()
 

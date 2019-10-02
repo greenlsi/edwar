@@ -100,7 +100,7 @@ def _plot_eda(data, out, reliability):
     axs[0].plot(data.index, out['EDA'], '#2e352c', label='corrected', alpha=0.8)
     axs[0].legend(loc='upper right')
 
-    axs[1].set_title('Accelerometer data')
+    axs[1].set_title('Accelerometer data1')
     axs[1].set_xlim([data.index[0], data.index[-1]])
     # y_min = min(0, data_min) - (data_max - data_min) * 0.1
     axs[1].set_ylim([min(min(data['AccelX']), min(data['AccelY']), min(data['AccelZ'])),
@@ -129,7 +129,7 @@ def _plot_eda(data, out, reliability):
     axs[2].plot(out.index, out['a5'], '#9e1fc4')
     axs[2].plot(out.index, out['a6'], '#700191')
     axs[2].plot(out.index, out['a7'], '#48005e')  # mas oscuro
-    # axs[3].set_xlim([data.index[0], data.index[-1]])
+    # axs[3].set_xlim([data1.index[0], data1.index[-1]])
     axs[3].set_title('Detail coefficients')
     # y_min = min(0, data_min) - (data_max - data_min) * 0.1
     axs[3].set_ylim([min(min(out['d1']), min(out['d7'])),
@@ -149,7 +149,7 @@ def _plot_eda(data, out, reliability):
 
 if __name__ == '__main__':
     testing = 1
-    directory = '../data/ejemplo1'
+    directory = '../data1/ejemplo1'
     EDAdata = cm.load_results(directory)[0:10000]
     evaluate_reliability_acc(EDAdata)
     EDAout = correct_eda(EDAdata, 1.5, testing)

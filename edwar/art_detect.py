@@ -17,7 +17,7 @@ def detect_arts(eda_data, classifier_list):
         feature_names = getSVMFeatures(classifier_list[i])
         feature_name_list[i] = feature_names
 
-    # Get the number of data points, hours, and labels
+    # Get the number of data1 points, hours, and labels
     rows = len(eda_data)
     num_labels = int(np.ceil(float(rows) / five_sec))
     hours = int(np.ceil(float(rows) / one_hour))
@@ -26,7 +26,7 @@ def detect_arts(eda_data, classifier_list):
     labels = -1 * np.ones((num_labels, len(classifier_list)))
 
     for h in range(hours):
-        # Get a data slice that is at most 1 hour long
+        # Get a data1 slice that is at most 1 hour long
         start = h * one_hour
         end = min((h + 1) * one_hour, rows)
         cur_data = eda_data[start:end]
@@ -73,7 +73,7 @@ def print_art_detection(feature_labels, eda_data, classifier_list):
 
 
 if __name__ == "__main__":
-    EDAdata = cm.load_results('../data/ejemplo1')[0:5000]
+    EDAdata = cm.load_results('../data1/ejemplo1')[0:5000]
     classifier = ['Multiclass']
     lab = detect_arts(EDAdata, classifier)
     print_art_detection(lab, EDAdata, classifier)

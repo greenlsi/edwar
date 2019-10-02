@@ -4,13 +4,13 @@ from sklearn.metrics.pairwise import rbf_kernel
 
 def predict_binary_classifier(X):
     ''''
-    X: num test data by 13 features
+    X: num test data1 by 13 features
     '''
 
     # Get params
     params = binary_classifier()
 
-    # compute kernel for all data points
+    # compute kernel for all data1 points
     K = rbf_kernel(params['support_vec'], X, gamma=params['gamma'])
 
     # Prediction = sign((sum_{i=1}^n y_i*alpha*K(x_i,x)) + rho)
@@ -23,7 +23,7 @@ def predict_binary_classifier(X):
 
 def predict_multiclass_classifier(X):
     '''
-        X: num test data by 10 features
+        X: num test data1 by 10 features
     '''
     # Get params
     params = multiclass_classifier()

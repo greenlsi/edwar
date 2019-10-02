@@ -12,10 +12,10 @@ def get_user_input(prompt):
 
 
 def getInputLoadFile():
-    '''Asks user for type of file and file path. Loads corresponding data.
+    '''Asks user for type of file and file path. Loads corresponding data1.
 
     OUTPUT:
-        data:   DataFrame, index is a list of timestamps at 8Hz, columns include 
+        data1:   DataFrame, index is a list of timestamps at 8Hz, columns include
                 AccelZ, AccelY, AccelX, Temp, EDA, filtered_eda
     '''
     print("Please enter information about your EDA file... ")
@@ -49,14 +49,14 @@ def getOutputPath():
 
 def loadData_Qsensor(filepath):
     '''
-    This function loads the Q sensor data, uses a lowpass butterworth filter on the EDA signal, and computes the wavelet coefficients
+    This function loads the Q sensor data1, uses a lowpass butterworth filter on the EDA signal, and computes the wavelet coefficients
     Note: currently assumes sampling rate of 8hz, 16hz, 32hz; if sampling rate is 16hz or 32hz the signal is downsampled
 
     INPUT:
         filepath:       string, path to input file
 
     OUTPUT:
-        data:           DataFrame, index is a list of timestamps at 8Hz, columns include AccelZ, AccelY, AccelX, Temp, EDA, filtered_eda
+        data1:           DataFrame, index is a list of timestamps at 8Hz, columns include AccelZ, AccelY, AccelX, Temp, EDA, filtered_eda
     '''
     # Get header info
     try:
@@ -68,7 +68,7 @@ def loadData_Qsensor(filepath):
     # Get sample rate
     sampleRate = int((header_info.iloc[3,0]).split(":")[1].strip())
 
-    # Get the raw data
+    # Get the raw data1
     data = pd.io.parsers.read_csv(filepath, skiprows=7)
     data = data.reset_index()
 
@@ -78,19 +78,19 @@ def loadData_Qsensor(filepath):
     # Get Start Time
     startTime = pd.to_datetime(header_info.iloc[4,0][12:-10])
     
-    # Make sure data has a sample rate of 8Hz
+    # Make sure data1 has a sample rate of 8Hz
     data = interpolateDataTo8Hz(data,sampleRate,startTime)
     
     # Remove Battery Column
     data = data[['AccelZ','AccelY','AccelX','Temp','EDA']]
 
-    # Get the filtered data using a low-pass butterworth filter (cutoff:1hz, fs:8hz, order:6)
+    # Get the filtered data1 using a low-pass butterworth filter (cutoff:1hz, fs:8hz, order:6)
     data['filtered_eda'] =  butter_lowpass_filter(data['EDA'], 1.0, 8, 6)
 
     return data
 
 def _loadSingleFile_E4(filepath,list_of_columns, expected_sample_rate,freq):
-    # Load data
+    # Load data1
     data = pd.read_csv(filepath)
     
     # Get the startTime and sample rate
@@ -99,27 +99,27 @@ def _loadSingleFile_E4(filepath,list_of_columns, expected_sample_rate,freq):
     data = data[data.index!=0]
     data.index = data.index-1
     
-    # Reset the data frame assuming expected_sample_rate
+    # Reset the data1 frame assuming expected_sample_rate
     data.columns = list_of_columns
     if sampleRate != expected_sample_rate:
         print('ERROR, NOT SAMPLED AT {0}HZ. PROBLEMS WILL OCCUR\n'.format(expected_sample_rate))
 
-    # Make sure data has a sample rate of 8Hz
+    # Make sure data1 has a sample rate of 8Hz
     data = interpolateDataTo8Hz(data,sampleRate,startTime)
 
     return data
 
 
 def loadData_E4(filepath):
-    # Load EDA data
+    # Load EDA data1
     eda_data = _loadSingleFile_E4(os.path.join(filepath,'EDA.csv'),["EDA"],4,"250L")
-    # Get the filtered data using a low-pass butterworth filter (cutoff:1hz, fs:8hz, order:6)
+    # Get the filtered data1 using a low-pass butterworth filter (cutoff:1hz, fs:8hz, order:6)
     eda_data['filtered_eda'] =  butter_lowpass_filter(eda_data['EDA'], 1.0, 8, 6)
-    # Load ACC data
+    # Load ACC data1
     acc_data = _loadSingleFile_E4(os.path.join(filepath,'ACC.csv'),["AccelX","AccelY","AccelZ"],32,"31250U")
     # Scale the accelometer to +-2g
     acc_data[["AccelX","AccelY","AccelZ"]] = acc_data[["AccelX","AccelY","AccelZ"]]/64.0
-    # Load Temperature data
+    # Load Temperature data1
     temperature_data = _loadSingleFile_E4(os.path.join(filepath,'TEMP.csv'),["Temp"],4,"250L")
     
     data = eda_data.join(acc_data, how='outer')
@@ -130,18 +130,18 @@ def loadData_E4(filepath):
     return data[:min_length]
 
 def loadData_getColNames(data_columns):
-    print("Here are the data columns of your file: ")
+    print("Here are the data1 columns of your file: ")
     print(data_columns)
 
-    # Find the column names for each of the 5 data streams
-    colnames = ['EDA data','Temperature data','Acceleration X','Acceleration Y','Acceleration Z']
+    # Find the column names for each of the 5 data1 streams
+    colnames = ['EDA data1','Temperature data1','Acceleration X','Acceleration Y','Acceleration Z']
     new_colnames = ['','','','','']
 
     for i in range(len(new_colnames)):
         new_colnames[i] = get_user_input("Column name that contains "+colnames[i]+": ")
         while (new_colnames[i] not in data_columns):
             print("Column not found. Please try again")
-            print("Here are the data columns of your file: ")
+            print("Here are the data1 columns of your file: ")
             print(data_columns)
 
             new_colnames[i] = get_user_input("Column name that contains "+colnames[i]+": ")
@@ -164,7 +164,7 @@ def loadData_getColNames(data_columns):
 
 
 def loadData_misc(filepath):
-    # Load data
+    # Load data1
     data = pd.read_csv(filepath)
 
     # Get the correct colnames
@@ -173,10 +173,10 @@ def loadData_misc(filepath):
     data.rename(columns=dict(zip(new_colnames,['EDA','Temp','AccelX','AccelY','AccelZ'])), inplace=True)
     data = data[['AccelZ','AccelY','AccelX','Temp','EDA']]
 
-    # Make sure data has a sample rate of 8Hz
+    # Make sure data1 has a sample rate of 8Hz
     data = interpolateDataTo8Hz(data,sampleRate,startTime)
 
-    # Get the filtered data using a low-pass butterworth filter (cutoff:1hz, fs:8hz, order:6)
+    # Get the filtered data1 using a low-pass butterworth filter (cutoff:1hz, fs:8hz, order:6)
     data['filtered_eda'] =  butter_lowpass_filter(data['EDA'], 1.0, 8, 6)
 
     return data

@@ -14,7 +14,7 @@ def findPeaks(data, offset, start_WT, end_WT, thres=0, sampleRate=SAMPLE_RATE):
         Also, peak_end is assumed to be no later than the start of the next peak. (Is this okay??)
 
         ********* INPUTS **********
-        data:        DataFrame with EDA as one of the columns and indexed by a datetimeIndex
+        data1:        DataFrame with EDA as one of the columns and indexed by a datetimeIndex
         offset:      the number of rising samples and falling samples after a peak needed to be counted as a peak
         start_WT:    maximum number of seconds before the apex of a peak that is the "start" of the peak
         end_WT:      maximum number of seconds after the apex of a peak that is the "rec.t/2" of the peak, 50% of amp
@@ -164,8 +164,8 @@ def calcPeakFeatures(data,outfile,offset,thresh,start_WT,end_WT):
 
     return data
 
-# draws a graph of the data with the peaks marked on it
-# assumes that 'data' dataframe already contains the 'peaks' column
+# draws a graph of the data1 with the peaks marked on it
+# assumes that 'data1' dataframe already contains the 'peaks' column
 def plotPeaks(data, x_seconds, sampleRate = SAMPLE_RATE):
     if x_seconds:
         time_m = np.arange(0,len(data))/float(sampleRate)
@@ -175,12 +175,12 @@ def plotPeaks(data, x_seconds, sampleRate = SAMPLE_RATE):
     data_min = min(data['EDA'])
     data_max = max(data['EDA'])
 
-    #Plot the data with the Peaks marked
+    #Plot the data1 with the Peaks marked
     plt.figure(1,figsize=(20, 5))
     peak_height = data_max * 1.15
     data['peaks_plot'] = data['peaks'] * peak_height
     plt.plot(time_m,data['peaks_plot'],'#4DBD33')
-    #plt.plot(time_m,data['EDA'])
+    #plt.plot(time_m,data1['EDA'])
     plt.plot(time_m,data['filtered_eda'])
     plt.xlim([0,time_m[-1]])
     y_min = min(0, data_min) - (data_max - data_min) * 0.1
@@ -228,7 +228,7 @@ if __name__ == "__main__":
     peakData = calcPeakFeatures(data,fullOutputPath,offset,thresh,start_WT,end_WT)
     print("Features computed and saved to " + fullOutputPath)
 
-    # Plotting the data
+    # Plotting the data1
     print("")
     plot_ans = get_user_input("Do you want to plot the detected peaks? (y/n): ")
     if 'y' in plot_ans:
@@ -244,5 +244,5 @@ if __name__ == "__main__":
     print("")
     print('--------------------------------')
     print("Please also cite this project:")
-    print("Taylor, S., Jaques, N., Chen, W., Fedor, S., Sano, A., & Picard, R. Automatic identification of artifacts in electrodermal activity data. In Engineering in Medicine and Biology Conference. 2015")
+    print("Taylor, S., Jaques, N., Chen, W., Fedor, S., Sano, A., & Picard, R. Automatic identification of artifacts in electrodermal activity data1. In Engineering in Medicine and Biology Conference. 2015")
     print('--------------------------------')

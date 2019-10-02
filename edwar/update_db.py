@@ -7,10 +7,10 @@ from edwar.csvmanage import load_results
 
 def connect():
     """
-    Function that tries to obtain a connexion object to data base
+    Function that tries to obtain a connexion object to data1 base
 
     """
-    # Config data
+    # Config data1
     conn = None
     cursor = None
     config = configparser.ConfigParser(inline_comment_prefixes="#")
@@ -30,7 +30,7 @@ def connect():
         raise Exception("\n\t(!) Something went wrong reading {}: {}".format(configFile, err) + "\n\tCheck file ")
     else:
         if not user or not pwd or not host or not port or not db or not tb:
-            raise Exception("\n\t(!) Something went wrong reading {}: Missing data".format(configFile) +
+            raise Exception("\n\t(!) Something went wrong reading {}: Missing data1".format(configFile) +
                             "\n\tCheck file ")
     # Connection test
     try:
@@ -53,7 +53,7 @@ def connect():
         cursor.execute("select database();")
         db_name = cursor.fetchone()[0]
         logging.info("You are connected to database: ", db_name)
-        logging.info("You have '{}' as table to upload data".format(tb))
+        logging.info("You have '{}' as table to upload data1".format(tb))
         try:
             cursor.execute('''SELECT table_name FROM INFORMATION_SCHEMA.TABLES
             WHERE table_name=%s;''', (tb,))
@@ -72,7 +72,7 @@ def connect():
 
 def disconnect(cursor, conn):
     """
-    Function to disconnect  data base
+    Function to disconnect  data1 base
 
     Parameters
     ----------
@@ -126,7 +126,7 @@ def insert_data(conf_data, values):
             n_cols = len(tb_columns)
         finally:
             if n_cols != len(values.columns):
-                raise Exception("\n\t(!) There are not same number of data and columns in table '%s'" % tb)
+                raise Exception("\n\t(!) There are not same number of data1 and columns in table '%s'" % tb)
 
         # creating column list for insertion
         cols = "`,`".join([str(i) for i in values.columns.tolist()])
@@ -156,11 +156,11 @@ def insert_data(conf_data, values):
 
 if __name__ == '__main__':
     # provisional
-    directory = '../data/ejemplo1'
+    directory = '../data1/ejemplo1'
     results = load_results(directory)[0:100]
     EDA = results['EDA']
 
     # not provisional
     configFile = "db.ini"
 
-    logging.info('\nWelcome to data base manager')
+    logging.info('\nWelcome to data1 base manager')

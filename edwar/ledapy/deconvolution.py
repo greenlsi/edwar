@@ -15,7 +15,7 @@ def sdeco(nr_iv):
     leda2.settings.dist0_min = 0
     leda2.settings.segmWidth = 12
 
-    # Downsample data for preanalysis, downsample if N > N_max but keep
+    # Downsample data1 for preanalysis, downsample if N > N_max but keep
     # samplingrate at 4 Hz minimum
     leda2.analysis0.target.t = npa(leda2.data.time_data)
     leda2.analysis0.target.d = npa(leda2.data.conductance_data)
@@ -116,7 +116,7 @@ def sdeconv_analysis(x, estim_tonic=1):
     deconvobj = np.hstack((d_ext, d_ext[-1] * np.ones(len(kernel) - 1)))
     (driverSC, remainderSC) = deconvolve(deconvobj, kernel)
     driverSC_smooth = utils.smooth(driverSC, swin)
-    # Shorten to data range
+    # Shorten to data1 range
     driverSC = driverSC[n_prefix:]
     driverSC_smooth = driverSC_smooth[n_prefix:]
     remainderSC = remainderSC[np.arange(n_prefix, len(d) + n_prefix)]
@@ -135,7 +135,7 @@ def sdeconv_analysis(x, estim_tonic=1):
         tonicData = convolve(convolvobj, kernel)
         tonicData = tonicData[nKernel:len(tonicData) + 1 - nKernel]
 
-    # Build tonic and phasic data
+    # Build tonic and phasic data1
     phasicData = d - tonicData
     phasicDriverRaw = driverSC - tonicDriver
     phasicDriver = utils.smooth(phasicDriverRaw, swin)
@@ -211,7 +211,7 @@ def deconv_apply():
     """
     Original location: Ledalab/analyze/deconvolution/sdeco.m>deconv_apply
     """
-    # Prepare target data for full resolution analysis
+    # Prepare target data1 for full resolution analysis
 
     leda2.analysis0.target.tonicDriver = npa(leda2.analysis0.target.poly.__call__(leda2.data.time_data))
     leda2.analysis0.target.t = npa(leda2.data.time_data)
@@ -228,12 +228,12 @@ def deconv_apply():
     (minL, maxL) = utils.get_peaks(driver)
     minL = np.hstack((minL[:len(maxL)], len(t)))
 
-    # Impulse data
+    # Impulse data1
     leda2.analysis.impulseOnset = t[minL[:-1]]
     leda2.analysis.impulsePeakTime = t[maxL]  # = effective peak-latency
     leda2.analysis.impulseAmp = driver[maxL]
 
-    # SCR data
+    # SCR data1
     leda2.analysis.onset = leda2.analysis.impulsePeakTime
     leda2.analysis.amp = np.zeros(len(maxL))
     leda2.analysis.peakTime = np.zeros(len(maxL))

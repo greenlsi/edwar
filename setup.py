@@ -4,7 +4,7 @@ setup(
   packages=['edwar'],   # Chose the same as "name"
   version='0.1',      # Start with a small number and increase it with every change you make
   license='MIT',        # Chose a license from here: https://help.github.com/articles/licensing-a-repository
-  description='signal Error Detection for WBSN And data Recovery',   # Give a short description about your library
+  description='signal Error Detection for WBSN And data1 Recovery',   # Give a short description about your library
   author='Miguel Merino',                   # Type in your name
   author_email='miguel_dreimal_30@hotmail.com',      # Type in your E-Mail
   url='https://github.com/greenlsi/edwar',   # Provide either the link to your github or to your website

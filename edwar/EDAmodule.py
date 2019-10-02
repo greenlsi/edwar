@@ -22,7 +22,7 @@ def butter_lowpass_filter(data, cutoff, fs, order=5):
 
 
 def eda_module(data):
-    # Get the filtered data using a low-pass butterworth filter (cutoff:1hz, fs:8hz, order:6)
+    # Get the filtered data1 using a low-pass butterworth filter (cutoff:1hz, fs:8hz, order:6)
     data['filtered_eda'] = butter_lowpass_filter(data['EDA'], 1.0, 8, 6)
     accel = calculate_xyz(data)
     output, error, coeffs = filt_accel(data, accel, m=M, step=STEP, leak=LEAK,  adaptive_step_factor=0.001)
@@ -35,7 +35,7 @@ if __name__ == '__main__':
     M = 24     # FIR filter taps
     STEP = 1   # FIR filter step
     LEAK = 0   # FIR filter leakage factor
-    directory = '../data/ejemplo1'
+    directory = '../data1/ejemplo1'
     EDAdata = cm.load_results(directory)[0:1000]
     EDAout = eda_module(EDAdata)
     xyz = calculate_xyz(EDAdata)

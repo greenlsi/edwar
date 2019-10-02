@@ -110,7 +110,7 @@ def plot_eda(data, y, e, xyz, m, step, leak):
 
 
 if __name__ == '__main__':
-    directory = '../data/ejemplo3'
+    directory = '../data1/ejemplo3'
     eda_data = cm.load_results(directory)[0:10000]  # [6000:7000] # [7500:8500] # [1500:2500 # [6000:7000] # [7800:8600]
     accel = calculate_xyz(eda_data)
     M = 12     # FIR filter taps

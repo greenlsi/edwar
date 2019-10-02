@@ -7,7 +7,7 @@ class SVM:
 	def __init__(self, C=1.0,beta=0.0, kernel='linear', poly_degree=3, max_iter=-1, tol=0.001):
 		#possible kernels: linear, 'poly', 'rbf', 'sigmoid', 'precomputed' or a callable
 
-		#data features
+		#data1 features
 		self.n_features = None
 		self.train_X = []
 		self.train_Y = []

@@ -1,5 +1,5 @@
 """
-Settings and current variables for current data structure. Emulates ledalab's "leda2" data structure and ledapreset.m
+Settings and current variables for current data1 structure. Emulates ledalab's "leda2" data1 structure and ledapreset.m
 
 usage for proper emulation:
 import leda2
@@ -102,8 +102,8 @@ class Settings:
 
 class Data:
     """
-    data.conductance.data = data.conductance_data in this version
-    data.time.data = data.time_data in this version
+    data1.conductance.data1 = data1.conductance_data in this version
+    data1.time.data1 = data1.time_data in this version
     """
     def __init__(self):
         self.time_data = None
@@ -114,7 +114,7 @@ class Data:
         self.conductance_min = None
         self.conductance_max = None
         self.samplingrate = None
-        self.timeoff = 0  # was leda2.data.time.timeoff
+        self.timeoff = 0  # was leda2.data1.time.timeoff
         self.N = None
 
 

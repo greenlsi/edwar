@@ -9,7 +9,7 @@ from numpy import array as npa
 filename = 'EDA1_long_100Hz.mat'
 sampling_rate = 100
 matdata = sio.loadmat(filename)
-rawdata = npa(matdata['data']['conductance'][0][0][0], dtype='float64')
+rawdata = npa(matdata['data1']['conductance'][0][0][0], dtype='float64')
 phasicdata = ledapy.runner.getResult(rawdata, 'phasicdata', sampling_rate, downsample=4, optimisation=2)
 
 also contains multiprocess interface pipes to be used as a separate process
@@ -28,7 +28,7 @@ def getResult(raw_vector, result_type, sampling_rate, downsample=1, optimisation
     Run main analysis: extract phasic driver (returned) and set all leda2 values
 
     parameters:
-    raw_vector : raw data
+    raw_vector : raw data1
     result_type : what we want returned. Either 'phasicdriver' or 'phasicdata'
     sampling_rate : input samping rate
     downsample : downsampling factor to reduce computing time (1 == no downsample)
@@ -77,7 +77,7 @@ def import_data(raw_data, srate, downsample=1):
 def calculateMinMax(driver, sample_rate, iscr_win, minmax_win, pipeout):
     """
     Compute minimum and maximum ISCR values for normalisation.
-    Intented to be used as a separate process to allow caller to process raw data.
+    Intented to be used as a separate process to allow caller to process raw data1.
 
     parameters:
     driver : scr phasic driver

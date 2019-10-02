@@ -5,10 +5,10 @@ import mysql.connector as sql
 
 def connect():
     """
-    Function that tries to obtain a connexion object to data base
+    Function that tries to obtain a connexion object to data1 base
 
     """
-    # Config data
+    # Config data1
     cursor = None
     configFile = "db.ini"
     if not os.path.exists(configFile):
@@ -56,7 +56,7 @@ def connect():
             disconnect(cursor, conn)
             raise Exception("\n\t(!) Something went wrong: exceeded maximum number of attempts to select a database\n")
         db_name = select_database(cursor, db_name)
-    print("Database %s selected to upload data" % db_name)
+    print("Database %s selected to upload data1" % db_name)
 
     print('\n\t--Table Selection--')
     cont = 0
@@ -67,7 +67,7 @@ def connect():
             disconnect(cursor, conn)
             raise Exception("\n\t(!) Something went wrong: exceeded maximum number of attempts to select a table\n")
         tb_name = select_table(cursor, tb_name)
-    print("Table %s selected to upload data" % tb_name)
+    print("Table %s selected to upload data1" % tb_name)
 
     config['DB'] = {'Host': host,
                     'Port': port,
@@ -85,7 +85,7 @@ def connect():
 
 def disconnect(cursor, conn):
     """
-    Function to disconnect  data base
+    Function to disconnect  data1 base
 
     Parameters
     ----------
@@ -183,5 +183,5 @@ def select_table(cursor, tb=None):
 
 
 if __name__ == '__main__':
-    print('\nWelcome to data base configurator')
+    print('\nWelcome to data1 base configurator')
     connect()

@@ -20,7 +20,7 @@ def get_date(pandas_time):
 
 
 def _load_single_file(directory, file, list_of_columns):
-    # Load data
+    # Load data1
     f = file_to_df(directory, file)
     try:
         data = pd.read_csv(f)
@@ -36,10 +36,10 @@ def _load_single_file(directory, file, list_of_columns):
     data = data[data.index != 0]
     data.index = data.index - 1
 
-    # Reset the data frame assuming expected_sample_rate
+    # Reset the data1 frame assuming expected_sample_rate
     data.columns = list_of_columns
 
-    # Make sure data has a sample rate of 8Hz
+    # Make sure data1 has a sample rate of 8Hz
     data.index = pd.date_range(start=start_time, periods=len(data), freq=str(int(increment*1e6))+'U')
     data = data.resample("125L").mean()
     cols = data.columns.values
@@ -101,6 +101,6 @@ def file_to_df(dirpath, cfile):
 
 
 if __name__ == "__main__":
-    Data = load_results("../data/ejemplo4")[0:100]
+    Data = load_results("../data1/ejemplo4")[0:100]
     # Data = downsample_to_1min(Data)
     print(Data)
