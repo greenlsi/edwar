@@ -1,5 +1,3 @@
-# import numpy as np
-# import os
 import matplotlib.pyplot as plt
 from numpy import array as npa
 from matplotlib.dates import DateFormatter
