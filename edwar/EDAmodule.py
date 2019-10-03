@@ -36,7 +36,7 @@ if __name__ == '__main__':
     STEP = 1   # FIR filter step
     LEAK = 0   # FIR filter leakage factor
     directory = '../data1/ejemplo1'
-    EDAdata = cm.load_results(directory)[0:1000]
+    EDAdata = cm.load_results_e4(directory)[0:1000]
     EDAout = eda_module(EDAdata)
     xyz = calculate_xyz(EDAdata)
     plot_eda(EDAdata, EDAout, EDAdata['EDA'] - EDAout['EDA'], xyz, M, STEP, LEAK)

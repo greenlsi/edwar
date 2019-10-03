@@ -48,8 +48,8 @@ def plot_scl(eda_data):
 if __name__ == '__main__':
 
     # Prueba:
-    directory = '../data1/ejemplo1'
-    EDA = cm.load_results(directory)[0:10000]
+    directory = '../data/ejemplo1'
+    EDA = cm.load_results_e4(directory)[0:10000]
     EDA = cm.downsample_to_1hz(EDA)
 
     EDA = calculate_eda_features(EDA)

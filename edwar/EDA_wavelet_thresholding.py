@@ -150,7 +150,7 @@ def _plot_eda(data, out, reliability):
 if __name__ == '__main__':
     testing = 1
     directory = '../data1/ejemplo1'
-    EDAdata = cm.load_results(directory)[0:10000]
+    EDAdata = cm.load_results_e4(directory)[0:10000]
     evaluate_reliability_acc(EDAdata)
     EDAout = correct_eda(EDAdata, 1.5, testing)
 

@@ -2,7 +2,7 @@ import configparser
 import os
 import logging
 import mysql.connector as sql
-from edwar.csvmanage import load_results
+from edwar.csvmanage import load_results_e4
 
 
 def connect():
@@ -157,7 +157,7 @@ def insert_data(conf_data, values):
 if __name__ == '__main__':
     # provisional
     directory = '../data1/ejemplo1'
-    results = load_results(directory)[0:100]
+    results = load_results_e4(directory)[0:100]
     EDA = results['EDA']
 
     # not provisional

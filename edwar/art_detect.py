@@ -73,7 +73,7 @@ def print_art_detection(feature_labels, eda_data, classifier_list):
 
 
 if __name__ == "__main__":
-    EDAdata = cm.load_results('../data1/ejemplo1')[0:5000]
+    EDAdata = cm.load_results_e4('../data1/ejemplo1')[0:5000]
     classifier = ['Multiclass']
     lab = detect_arts(EDAdata, classifier)
     print_art_detection(lab, EDAdata, classifier)
