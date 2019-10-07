@@ -1,16 +1,17 @@
 import configparser
 import os
 import logging
+import pandas as pd
 import mysql.connector as sql
-from edwar.csvmanage import load_results_e4
+from edwar.csvmanage import load_results_e4, downsample_to_1hz
 
 
 def connect():
     """
-    Function that tries to obtain a connexion object to data1 base
+    Function that tries to obtain a connexion object to data base
 
     """
-    # Config data1
+    # Config data
     conn = None
     cursor = None
     config = configparser.ConfigParser(inline_comment_prefixes="#")
@@ -30,7 +31,7 @@ def connect():
         raise Exception("\n\t(!) Something went wrong reading {}: {}".format(configFile, err) + "\n\tCheck file ")
     else:
         if not user or not pwd or not host or not port or not db or not tb:
-            raise Exception("\n\t(!) Something went wrong reading {}: Missing data1".format(configFile) +
+            raise Exception("\n\t(!) Something went wrong reading {}: Missing data".format(configFile) +
                             "\n\tCheck file ")
     # Connection test
     try:
@@ -53,7 +54,7 @@ def connect():
         cursor.execute("select database();")
         db_name = cursor.fetchone()[0]
         logging.info("You are connected to database: ", db_name)
-        logging.info("You have '{}' as table to upload data1".format(tb))
+        logging.info("You have '{}' as table to upload data".format(tb))
         try:
             cursor.execute('''SELECT table_name FROM INFORMATION_SCHEMA.TABLES
             WHERE table_name=%s;''', (tb,))
@@ -72,7 +73,7 @@ def connect():
 
 def disconnect(cursor, conn):
     """
-    Function to disconnect  data1 base
+    Function to disconnect  data base
 
     Parameters
     ----------
@@ -100,7 +101,7 @@ def insert_data(conf_data, values):
     n = 0
     f = 0
     errors = []
-    n_cols = 5
+    n_cols = len(values.columns)
     tb = conf_data[5]
     try:
         conn = sql.connect(
@@ -117,16 +118,16 @@ def insert_data(conf_data, values):
         raise Exception("\n\t(!) Connection went wrong: {}".format(err))
     else:
         try:
-            cursor.execute('DESCRIBE %s', (tb,))
+            cursor.execute('DESCRIBE %s' % tb)
         except Exception as err:
             raise Exception("\n\t(!) Something went wrong in insert_data() function while getting columns " +
-                            "from table `features`: {}".format(err))
+                            "from table `{}`: {}".format(tb, err))
         else:
             tb_columns = [i[0] for i in cursor.fetchall()]
             n_cols = len(tb_columns)
         finally:
             if n_cols != len(values.columns):
-                raise Exception("\n\t(!) There are not same number of data1 and columns in table '%s'" % tb)
+                raise Exception("\n\t(!) There are not same number of data and columns in table '%s'" % tb)
 
         # creating column list for insertion
         cols = "`,`".join([str(i) for i in values.columns.tolist()])
@@ -154,13 +155,29 @@ def insert_data(conf_data, values):
         disconnect(cursor, conn)
 
 
+def prepare_features(data):
+    tb_columns = ['data_type', 'ts', 'value']
+    ncols = len(data.columns)
+    nrows = len(data)
+    list_update = pd.DataFrame(index=range(0, ncols * nrows), columns=tb_columns)
+    n = 0
+    for column in data.columns:
+        for index in range(0, nrows):
+            list_update.loc[n*nrows+index, tb_columns] = [column, ts_transform(data[column].index[index]),
+                                                          float(data[column].values[index])]
+        n += 1
+    return list_update
+
+
 if __name__ == '__main__':
     # provisional
-    directory = '../data1/ejemplo1'
-    results = load_results_e4(directory)[0:100]
-    EDA = results['EDA']
-
+    directory = '../data/ejemplo1'
+    results = load_results_e4(directory)[0][0:100]
+    results = downsample_to_1hz(results)
     # not provisional
     configFile = "db.ini"
 
-    logging.info('\nWelcome to data1 base manager')
+    logging.info('\nWelcome to data base manager')
+    connection = connect()
+    up_data = prepare_features(results)
+    insert_data(connection, up_data)
