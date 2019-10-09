@@ -3,7 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.dates import DateFormatter
 from datetime import timedelta
-from edwar.eda_explorer.load_files import butter_lowpass_filter
+from edwar.eda_module import butter_lowpass_filter
 from edwar import nlms as nm
 from . import csvmanage as cm
 from . import art_detect as ad

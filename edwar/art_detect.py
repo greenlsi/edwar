@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 from datetime import timedelta
 from matplotlib.dates import DateFormatter
 from edwar.eda_explorer.EDA_Artifact_Detection_Script import classifyEpochs, createFeatureDF, getSVMFeatures
-import csvmanage as cm
 
 
 def detect_arts(eda_data, classifier_list):
@@ -73,6 +72,7 @@ def print_art_detection(feature_labels, eda_data, classifier_list):
 
 
 if __name__ == "__main__":
+    from . import csvmanage as cm
     from edwar import eda_module as ed
     EDAdata = cm.load_results_e4('../data/ejemplo1')[0]
     EDAdata['filtered_eda'] = ed.butter_lowpass_filter(EDAdata['EDA'], 1.0, 8, 6)

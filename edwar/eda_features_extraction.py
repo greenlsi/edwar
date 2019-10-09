@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import ledapy
 from numpy import array as npa
 from matplotlib.dates import DateFormatter
-import csvmanage as cm
+from . import csvmanage as cm
 
 
 def calculate_eda_features(eda_data):
