@@ -130,9 +130,9 @@ def insert_data(values):
 
 if __name__ == '__main__':
     # provisional
-    from edwar import csvmanage as cm
+    from . import csvmanage as cm
     try:
-        from edwar.data_to_db_adapter import adapt_features
+        from .data_to_db_adapter import adapt_features
     except ImportError:
         raise ImportError('File data_to_db_adapter not found. Run init_db.py to generate it')
     directory = '../data/ejemplo1'

@@ -46,7 +46,7 @@ def plot_scl(eda_data):
 
 
 if __name__ == '__main__':
-    from edwar import eda_module as ed
+    from . import eda_module as ed
     # Prueba:
     directory = '../data/ejemplo1'
     EDA = cm.load_results_e4(directory)[0].loc[:, ['EDA']]
