@@ -60,14 +60,19 @@ def connect():
 
     print('\n\t--Table Selection--')
     cont = 0
-    tb_name = select_table(cursor, tb_name)
+    tb_name, default_function = select_table(cursor, tb_name)
     while not tb_name:
         cont += 1
         if cont >= 3:
             disconnect(cursor, conn)
             raise Exception("\n\t(!) Something went wrong: exceeded maximum number of attempts to select a table\n")
         tb_name = select_table(cursor, tb_name)
-    print("Table %s selected to upload data" % tb_name)
+    if not default_function:
+        ans = input('Do you need a personalized function to adapt features to your table (y/n): ')
+        if not ans == 'y':
+            default_function = True
+    gen_prepare_features(default_function)
+    print("Table {} selected to upload data".format(tb_name))
 
     config['DB'] = {'Host': host,
                     'Port': port,
@@ -169,8 +174,13 @@ def select_table(cursor, tb=None):
         a = input('Table header must contain {}\nDo you want to create a new table? (y/n): '.format(header_needed))
         if a == 'y':
             tb = create_table(cursor)
+            default = True
         else:
             tb = input('Select table: ')
+            default = False
+    else:
+        default = False
+
     try:
         cursor.execute("SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE table_name=%s;", (tb,))
         if cursor.fetchone() is None:
@@ -179,7 +189,44 @@ def select_table(cursor, tb=None):
     except sql.errors.Error as err:
         print("\n\t(!) Something went wrong while trying to select table {}: {}\n".format(tb, err))
         tb = None
-    return tb
+    return tb, default
+
+
+def gen_prepare_features(default=True):
+    function = '''
+import pandas as pd
+
+
+def _ts_transform(timestamp):
+    date_time = timestamp.strftime("%Y-%m-%d %H:%M:%S")
+    return date_time
+
+
+def adapt_features(data):
+    list_table_columns = ['data_type', 'ts', 'value']
+    ncols = len(data.columns)
+    nrows = len(data)
+    list_update = pd.DataFrame(index=range(0, ncols * nrows), columns=list_table_columns)
+    n = 0
+    for column in data.columns:
+        for index in range(0, nrows):
+            list_update.loc[n * nrows + index, list_table_columns] = [column, _ts_transform(data[column].index[index]),
+                                                                      float(data[column].values[index])]
+        n += 1
+    return list_update
+'''
+    personalized_function = '''
+def adapt_features(data):
+    "your code goes here"  # TODO
+'''
+
+    prepare_features_file = "data_to_db_adapter.py"
+    f = open(prepare_features_file, "w")
+    if default:
+        f.write(function)
+    else:
+        f.write(personalized_function)
+    f.close()
 
 
 if __name__ == '__main__':

@@ -1,8 +1,8 @@
 from scipy import signal
 # from edwar.EDA_wavelet_thresholding import correct_eda
-from edwar.adaptive_filtering import filt_accel, calculate_xyz, plot_eda
 from edwar.eda_features_extraction import calculate_eda_features
-from edwar import csvmanage as cm
+from . import csvmanage as cm
+from .adaptive_filtering import filt_accel, calculate_xyz, plot_eda
 
 
 def butter_lowpass(cutoff, fs, order=5):

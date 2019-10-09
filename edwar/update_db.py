@@ -1,9 +1,7 @@
 import configparser
 import os
 import logging
-import pandas as pd
 import mysql.connector as sql
-from edwar.csvmanage import load_results_e4, downsample_to_1hz
 
 
 def connect():
@@ -91,11 +89,6 @@ def disconnect(cursor, conn):
     return 1
 
 
-def ts_transform(timestamp):
-    date_time = timestamp.strftime("%Y-%m-%d %H:%M:%S")
-    return date_time
-
-
 def insert_data(conf_data, values):
     cursor = None
     n = 0
@@ -155,29 +148,20 @@ def insert_data(conf_data, values):
         disconnect(cursor, conn)
 
 
-def prepare_features(data):
-    tb_columns = ['data_type', 'ts', 'value']
-    ncols = len(data.columns)
-    nrows = len(data)
-    list_update = pd.DataFrame(index=range(0, ncols * nrows), columns=tb_columns)
-    n = 0
-    for column in data.columns:
-        for index in range(0, nrows):
-            list_update.loc[n*nrows+index, tb_columns] = [column, ts_transform(data[column].index[index]),
-                                                          float(data[column].values[index])]
-        n += 1
-    return list_update
-
-
 if __name__ == '__main__':
     # provisional
+    from edwar import csvmanage as cm
+    try:
+        from edwar.data_to_db_adapter import adapt_features
+    except ImportError:
+        raise ImportError('File data_to_db_adapter not found. Run init_db.py to generate it')
     directory = '../data/ejemplo1'
-    results = load_results_e4(directory)[0][0:100]
-    results = downsample_to_1hz(results)
+    results = cm.load_results_e4(directory)[0][0:100]
+    results = cm.downsample_to_1hz(results)
     # not provisional
     configFile = "db.ini"
 
     logging.info('\nWelcome to data base manager')
     connection = connect()
-    up_data = prepare_features(results)
+    up_data = adapt_features(results)
     insert_data(connection, up_data)

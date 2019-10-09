@@ -3,10 +3,10 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.dates import DateFormatter
 from datetime import timedelta
-from edwar.nlms import nlms
-import edwar.csvmanage as cm
 from edwar.eda_explorer.load_files import butter_lowpass_filter
-from edwar.art_detect import detect_arts
+from edwar import nlms as nm
+from . import csvmanage as cm
+from . import art_detect as ad
 
 
 def calculate_xyz(data):
@@ -26,11 +26,11 @@ def filt_accel(data, xyz, m=48, step=1.0, leak=0.0, init_coeffs=None, adaptive_s
     u = xyz
     if init_coeffs is None:
         # aproximation of initial coefficients based on proximity 2 consecutive points
-        yi, ei, wi = nlms(u, d, m, 1, init_coeffs=init_coeffs, n=1)
+        yi, ei, wi = nm.nlms(u, d, m, 1, init_coeffs=init_coeffs, n=1)
     else:
         wi = init_coeffs
 
-    y, e, w = nlms(u, d, m, step, init_coeffs=wi, leak=leak, adaptive_step_factor=adaptive_step_factor)
+    y, e, w = nm.nlms(u, d, m, step, init_coeffs=wi, leak=leak, adaptive_step_factor=adaptive_step_factor)
     out = pd.DataFrame(y, index=data['EDA'].index[m-1:])
     '''np.concatenate((d[0:m - 1], y))'''
     out.columns = ['EDA']
@@ -45,8 +45,8 @@ def plot_eda(data, y, e, xyz, m, step, leak):
     first_artifact = 1
     first_questionable = 1
     classifier = ['Multiclass']
-    feature_labels = detect_arts(data, classifier)
-    feature_labels_corrected = detect_arts(y, classifier)
+    feature_labels = ad.detect_arts(data, classifier)
+    feature_labels_corrected = ad.detect_arts(y, classifier)
     # EDAdata['filterACC']
     fig, axs = plt.subplots(4, 1, figsize=(20, 20))
     axs[0].plot(y.index, y['EDA'], 'b', label='EDA')
@@ -110,8 +110,9 @@ def plot_eda(data, y, e, xyz, m, step, leak):
 
 
 if __name__ == '__main__':
-    directory = '../data1/ejemplo3'
-    eda_data = cm.load_results_e4(directory)[0:10000]  # [6000:7000] # [7500:8500] # [1500:2500 # [6000:7000] # [7800:8600]
+    directory = '../data/ejemplo3'
+    eda_data = cm.load_results_e4(directory)[0:10000]
+    # [6000:7000] # [7500:8500] # [1500:2500 # [6000:7000] # [7800:8600]
     accel = calculate_xyz(eda_data)
     M = 12     # FIR filter taps
     STEP = 1   # FIR filter step

@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import pywt
 from matplotlib.dates import DateFormatter
-from edwar import csvmanage as cm
+from . import csvmanage as cm
 from edwar.eda_explorer.load_files import butter_lowpass_filter
 
 
