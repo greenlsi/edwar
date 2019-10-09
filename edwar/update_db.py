@@ -4,13 +4,12 @@ import logging
 import mysql.connector as sql
 
 
-def connect():
+def _connect():
     """
     Function that tries to obtain a connexion object to data base
 
     """
     # Config data
-    conn = None
     cursor = None
     config = configparser.ConfigParser(inline_comment_prefixes="#")
 
@@ -57,21 +56,17 @@ def connect():
             cursor.execute('''SELECT table_name FROM INFORMATION_SCHEMA.TABLES
             WHERE table_name=%s;''', (tb,))
             if cursor.fetchone() is None:
-                disconnect(cursor, conn)
+                _disconnect(cursor, conn)
                 raise Exception("\n\t(!) Something went wrong while trying to select table '%s': Table not found" % tb)
         except Exception as err:
-            disconnect(cursor, conn)
+            _disconnect(cursor, conn)
             raise Exception("\n\t(!) Something went wrong trying to select table 'features': {}".format(err))
-
-    finally:
-        disconnect(cursor, conn)
-    conf_data = [host, port, user, pwd, db_name, tb]
-    return conf_data
+    return conn, cursor, tb
 
 
-def disconnect(cursor, conn):
+def _disconnect(cursor, conn):
     """
-    Function to disconnect  data base
+    Function to _disconnect  data base
 
     Parameters
     ----------
@@ -89,63 +84,48 @@ def disconnect(cursor, conn):
     return 1
 
 
-def insert_data(conf_data, values):
-    cursor = None
+def insert_data(values):
     n = 0
     f = 0
     errors = []
     n_cols = len(values.columns)
-    tb = conf_data[5]
+    conn, cursor, tb = _connect()
     try:
-        conn = sql.connect(
-            host=conf_data[0],
-            port=conf_data[1],
-            user=conf_data[2],
-            passwd=conf_data[3],
-            database=conf_data[4],
-        )
-        if conn.is_connected():
-            cursor = conn.cursor()
-            conn.autocommit = False
+        cursor.execute('DESCRIBE %s' % tb)
     except Exception as err:
-        raise Exception("\n\t(!) Connection went wrong: {}".format(err))
+        raise Exception("\n\t(!) Something went wrong in insert_data() function while getting columns " +
+                        "from table `{}`: {}".format(tb, err))
     else:
+        tb_columns = [i[0] for i in cursor.fetchall()]
+        n_cols = len(tb_columns)
+    finally:
+        if n_cols != len(values.columns):
+            raise Exception("\n\t(!) There are not same number of data and columns in table '%s'" % tb)
+
+    # creating column list for insertion
+    cols = "`,`".join([str(i) for i in values.columns.tolist()])
+
+    # Insert DataFrame records one by one.
+    for i, row in values.iterrows():
+        order = "INSERT INTO `{}` (`".format(tb) + cols + "`) VALUES (" + "%s," * (len(row) - 1) + "%s)"
         try:
-            cursor.execute('DESCRIBE %s' % tb)
-        except Exception as err:
-            raise Exception("\n\t(!) Something went wrong in insert_data() function while getting columns " +
-                            "from table `{}`: {}".format(tb, err))
-        else:
-            tb_columns = [i[0] for i in cursor.fetchall()]
-            n_cols = len(tb_columns)
-        finally:
-            if n_cols != len(values.columns):
-                raise Exception("\n\t(!) There are not same number of data and columns in table '%s'" % tb)
+            cursor.execute(order, tuple(row))
+            # the connection is not autocommitted by default, so we must commit to save our changes
+            conn.commit()
+            n += 1
+        except sql.errors.Error as err:
 
-        # creating column list for insertion
-        cols = "`,`".join([str(i) for i in values.columns.tolist()])
-
-        # Insert DataFrame records one by one.
-        for i, row in values.iterrows():
-            order = "INSERT INTO `{}` (`".format(tb) + cols + "`) VALUES (" + "%s," * (len(row) - 1) + "%s)"
-            try:
-                cursor.execute(order, tuple(row))
-                # the connection is not autocommitted by default, so we must commit to save our changes
-                conn.commit()
-                n += 1
-            except sql.errors.Error as err:
-
-                errors.append(err)
-                f += 1
-                conn.rollback()
-        if n:
-            logging.info(n, "record(s) inserted")
-        if f:
-            logging.info("(!) %i record(s) could not be inserted" % f)
-            logging.error('Errors: ')
-            for error in errors:
-                logging.error('\t%i- %s' % (errors.index(error), error))
-        disconnect(cursor, conn)
+            errors.append(err)
+            f += 1
+            conn.rollback()
+    if n:
+        logging.info(n, "record(s) inserted")
+    if f:
+        logging.info("(!) %i record(s) could not be inserted" % f)
+        logging.error('Errors: ')
+        for error in errors:
+            logging.error('\t%i- %s' % (errors.index(error), error))
+    _disconnect(cursor, conn)
 
 
 if __name__ == '__main__':
@@ -162,6 +142,5 @@ if __name__ == '__main__':
     configFile = "db.ini"
 
     logging.info('\nWelcome to data base manager')
-    connection = connect()
     up_data = adapt_features(results)
-    insert_data(connection, up_data)
+    insert_data(up_data)

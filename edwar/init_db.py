@@ -90,7 +90,7 @@ def connect():
 
 def disconnect(cursor, conn):
     """
-    Function to disconnect  data base
+    Function to _disconnect  data base
 
     Parameters
     ----------
