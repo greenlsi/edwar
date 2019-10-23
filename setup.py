@@ -24,7 +24,7 @@ setup(
           'configparser',
           'PyWavelets',
           'scipy',
-          'mysql-connector-python',
+          'mysql-connector-python',edwar
           'ledapy'
   ],
   classifiers=[

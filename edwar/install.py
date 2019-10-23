@@ -6,9 +6,9 @@ from . import file_loader as fl
 from . import init_db as idb
 
 __all__ = {
-    'structure_ini',
+    'structure_configfile',
     'all_ini',
-    'db_ini'
+    'db_configfile'
 }
 
 structure_ini_default = '''[DEVICE]
@@ -177,11 +177,11 @@ def _user_identification():
 
 
 def all_ini():
-    structure_ini()
-    db_ini()
+    structure_configfile()
+    db_configfile()
 
 
-def structure_ini(default=True):
+def structure_configfile(default=True):
     structure_ini_file = "structure.ini"
     if default:
         f = open(structure_ini_file, "w")
@@ -190,7 +190,7 @@ def structure_ini(default=True):
     _configuration_structure(structure_ini_file)
     
 
-def db_ini():
+def db_configfile():
     dbini_file = "db.ini"
     config2 = configparser.ConfigParser(inline_comment_prefixes="#")
     if not os.path.exists(dbini_file):
