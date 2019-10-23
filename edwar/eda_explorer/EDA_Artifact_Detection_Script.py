@@ -5,8 +5,8 @@ import matplotlib.pyplot as plt
 import pywt
 import os
 
-from edwar.eda_explorer.load_files import *
-from edwar.eda_explorer.ArtifactClassifiers import predict_binary_classifier, predict_multiclass_classifier
+from .load_files import *
+from .ArtifactClassifiers import predict_binary_classifier, predict_multiclass_classifier
 
 matplotlib.rcParams['ps.useafm'] = True
 matplotlib.rcParams['pdf.use14corefonts'] = True

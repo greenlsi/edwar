@@ -3,10 +3,9 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.dates import DateFormatter
 from datetime import timedelta
-from .eda_module import butter_lowpass_filter
-from . import nlms as nm
-from . import csvmanage as cm
-from . import art_detect as ad
+from edwar import eda_module as em
+from edwar.eda_module import nlms as nm, art_detect as ad
+from edwar import file_loader as cm
 
 
 def calculate_xyz(data):
@@ -16,7 +15,7 @@ def calculate_xyz(data):
 
     x_y_z = np.sqrt(pow(x, 2) + pow(y, 2) + pow(z, 2))
     xyz = np.concatenate((np.array([0]), np.diff(x_y_z))) + np.mean(x_y_z)
-    xyz_f = butter_lowpass_filter(xyz, 1.0, 8, 6)
+    xyz_f = em.butter_lowpass_filter(xyz, 1.0, 8, 6)
 
     return xyz_f
 
@@ -34,7 +33,7 @@ def filt_accel(data, xyz, m=48, step=1.0, leak=0.0, init_coeffs=None, adaptive_s
     out = pd.DataFrame(y, index=data['EDA'].index[m-1:])
     '''np.concatenate((d[0:m - 1], y))'''
     out.columns = ['EDA']
-    out['filtered_eda'] = butter_lowpass_filter(out['EDA'], 1.0, 8, 6)
+    out['filtered_eda'] = em.butter_lowpass_filter(out['EDA'], 1.0, 8, 6)
     # out['filtered_eda'][0:4*6] = out['EDA'][0:4*6]  # margin to stabilize filter
     er = pd.DataFrame(np.concatenate((np.zeros(m-1), e)), index=data['EDA'].index)
 
@@ -111,7 +110,7 @@ def plot_eda(data, y, e, xyz, m, step, leak):
 
 if __name__ == '__main__':
     directory = '../data/ejemplo3'
-    eda_data = cm.load_results_e4(directory)[0:10000]
+    eda_data = cm.loader_e4(directory)[0:10000]
     # [6000:7000] # [7500:8500] # [1500:2500 # [6000:7000] # [7800:8600]
     accel = calculate_xyz(eda_data)
     M = 12     # FIR filter taps

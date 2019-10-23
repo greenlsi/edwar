@@ -3,34 +3,13 @@ import os
 import mysql.connector as sql
 
 
-def connect():
-    """
-    Function that tries to obtain a connexion object to data base
+__all__ = {
+    'connect',
+    'test_connect'
+}
 
-    """
-    # Config data
-    cursor = None
-    configFile = "db.ini"
-    if not os.path.exists(configFile):
-        raise Exception("\n\t(!) Something went wrong: Configuration file {} not found".format(configFile))
 
-    structureFile = "structure.ini"
-    if not os.path.exists(structureFile):
-        raise Exception("\n\t(!) Something went wrong: Configuration file {} not found".format(structureFile))
-    config = configparser.ConfigParser(inline_comment_prefixes="#")
-    config.read(configFile)
-    try:
-        user = config.get("DB", "User")
-        pwd = config.get("DB", "Password")
-        host = config.get("DB", "Host")
-        port = config.get("DB", "Port")
-        db_name = config.get("DB", "DB_name")
-        tb_name = config.get("DB", "Tb_name")
-    except Exception as err:
-        raise Exception("\n\t(!) Something went wrong reading {}: {}".format(configFile, err) +
-                        "\n\tCheck file or remove it ")
-
-    # Connection test
+def test_connect(host, port, user, pwd):
     try:
         conn = sql.connect(
             host=host,
@@ -39,13 +18,46 @@ def connect():
             port=port,
         )
         if conn.is_connected():
-            print("\n\tconnection with host {} established".format(host))
             cursor = conn.cursor()
+        else:
+            raise IOError("\n\t(!) Connection went wrong: cursor could not be created\n")
     except sql.errors.Error as err:
         if err.errno == sql.errorcode.ER_ACCESS_DENIED_ERROR:
-            raise Exception("\n\t(!) Something is wrong with your user name or password\n")
+            raise ValueError("\n\t(!) Something is wrong with your user name or password\n")
         else:
-            raise Exception("\n\t(!) Connection went wrong: {}\n".format(err))
+            raise IOError("\n\t(!) Connection went wrong: {}\n".format(err))
+    else:
+        return conn, cursor
+
+
+def connect():
+    """
+    Function that tries to obtain a connexion object to data base
+
+    """
+    # Config data
+    config_file = "db.ini"
+    if not os.path.exists(config_file):
+        raise Exception("\n\t(!) Something went wrong: Configuration file {} not found".format(config_file))
+
+    structure_file = "structure.ini"
+    if not os.path.exists(structure_file):
+        raise Exception("\n\t(!) Something went wrong: Configuration file {} not found".format(structure_file))
+    config = configparser.ConfigParser(inline_comment_prefixes="#")
+    config.read(config_file)
+    try:
+        user = config.get("DB", "User")
+        pwd = config.get("DB", "Password")
+        host = config.get("DB", "Host")
+        port = config.get("DB", "Port")
+        db_name = config.get("DB", "DB_name")
+        tb_name = config.get("DB", "Tb_name")
+    except Exception as err:
+        raise Exception("\n\t(!) Something went wrong reading {}: {}".format(config_file, err) +
+                        "\n\tCheck file or remove it ")
+
+    # Connection test
+    conn, cursor = test_connect(host, port, user, pwd)
 
     print('\n\t--Database Selection--')
     cont = 0
@@ -84,8 +96,7 @@ def connect():
         config.write(confFile)
 
     disconnect(cursor, conn)
-    conf_data = [host, port, user, pwd, db_name]
-    return conf_data
+    return host, port, user, pwd, db_name, tb_name
 
 
 def disconnect(cursor, conn):
@@ -143,13 +154,13 @@ def create_table(cursor):
     if_new_features = input('Do you want to use other features? (if yes, features declared in structure.ini file will '
                             + 'be used) (y/n): ')
     if if_new_features == 'y':
-        structureFile = "structure.ini"
+        structure_file = "structure.ini"
         config = configparser.ConfigParser(inline_comment_prefixes="#")
-        config.read(structureFile)
+        config.read(structure_file)
         out_modules = config.items(section='FEATURES')
         features = ()
         for module in out_modules:
-            features += tuple(module[1].split(', '))
+            features += tuple(module[1].replace(' ', '').split(','))
 
     else:
         features = default_features
@@ -192,8 +203,7 @@ def select_table(cursor, tb=None):
     return tb, default
 
 
-def gen_prepare_features(default=True):
-    function = '''
+function = '''
 import pandas as pd
 
 
@@ -215,18 +225,26 @@ def adapt_features(data):
         n += 1
     return list_update
 '''
-    personalized_function = '''
+personalized_function = '''
 def adapt_features(data):
     "your code goes here"  # TODO
 '''
 
+
+def gen_prepare_features(default=True):
     prepare_features_file = "data_to_db_adapter.py"
-    f = open(prepare_features_file, "w")
-    if default:
-        f.write(function)
+    ans = 'y'
+    if os.path.exists(prepare_features_file):
+        ans = input('%s already exists, do you want to overwrite it? (y/n): ' % prepare_features_file)
+    if ans == 'y':
+        f = open(prepare_features_file, "w")
+        if default:
+            f.write(function)
+        else:
+            f.write(personalized_function)
+        f.close()
     else:
-        f.write(personalized_function)
-    f.close()
+        pass
 
 
 if __name__ == '__main__':

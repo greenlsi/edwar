@@ -3,9 +3,12 @@ import zipfile
 import configparser
 import pandas as pd
 
-
-def get_input(prompt):
-    return input(prompt)
+# exec()
+# Do not use capital letters for device names
+__all__ = {
+    'loader_e4',
+    'loader_everion'
+}
 
 
 def get_seconds_and_microseconds(pandas_time):
@@ -21,7 +24,7 @@ def get_date(pandas_time):
 
 def _load_single_file_e4(directory, file, list_of_columns):
     # Load data
-    f = file_to_df(directory, file)
+    f = _file_to_df(directory, file)
     try:
         data = pd.read_csv(f)
     except IOError:
@@ -50,7 +53,7 @@ def _load_single_file_e4(directory, file, list_of_columns):
 
 def _load_ibi_file_e4(directory, file, list_of_columns):
     # Load data
-    f = file_to_df(directory, file)
+    f = _file_to_df(directory, file)
     try:
         ibi = pd.read_csv(f)
     except IOError:
@@ -69,7 +72,7 @@ def _load_ibi_file_e4(directory, file, list_of_columns):
 
 def _load_single_file_everion(directory, file, list_of_columns):
     # Load data
-    f = file_to_df(directory, file)
+    f = _file_to_df(directory, file)
     try:
         data1 = pd.read_csv(f)
     except IOError:
@@ -90,19 +93,19 @@ def _load_single_file_everion(directory, file, list_of_columns):
     return data
 
 
-def load_results_e4(dirpath):
-    structureFile = "structure.ini"
-    if not os.path.exists(structureFile):
-        raise Exception("\n\t(!) Something went wrong: Configuration file {} not found".format(structureFile))
+def loader_e4(dirpath, downsample=None):
+    structure_file = "structure.ini"
+    if not os.path.exists(structure_file):
+        raise Exception("\n\t(!) Something went wrong: Configuration file {} not found".format(structure_file))
     config = configparser.ConfigParser(inline_comment_prefixes="#")
     config.optionxform = str
-    config.read(structureFile)
+    config.read(structure_file)
     variables = config.items(section='VARIABLES')
     ibi = data = pd.DataFrame()
     for variable in variables:
         if variable[0] == 'IBI':
             try:
-                ibi = _load_ibi_file_e4(dirpath, variable[0] + '.csv', variable[1].split(', '))
+                ibi = _load_ibi_file_e4(dirpath, variable[0] + '.csv', variable[1].replace(' ', '').split(','))
             except Exception as err:
                 raise Exception("\n\t(!) Something went wrong with {}: {}".format(variable[0]+'.csv', err))
         else:
@@ -115,38 +118,43 @@ def load_results_e4(dirpath):
             else:
                 data = data.join(v, how='inner')
 
+    if downsample == '1s':
+        data = downsample_to_1hz(data)
+        ibi = downsample_to_1hz(ibi)
+    elif downsample == '1min':
+        data = downsample_to_1min(data)
+        ibi = downsample_to_1min(ibi)
+    else:
+        pass
+
     return [data, ibi]
 
 
-def load_results_everion(dirpath):
-    structureFile = "structure.ini"
-    if not os.path.exists(structureFile):
-        raise Exception("\n\t(!) Something went wrong: Configuration file {} not found".format(structureFile))
+def loader_everion(dirpath, downsample=None):
+    structure_file = "structure.ini"
+    if not os.path.exists(structure_file):
+        raise Exception("\n\t(!) Something went wrong: Configuration file {} not found".format(structure_file))
     config = configparser.ConfigParser(inline_comment_prefixes="#")
     config.optionxform = str
-    config.read(structureFile)
+    config.read(structure_file)
     variables = config.items(section='VARIABLES')
     data = pd.DataFrame()
     for variable in variables:
         try:
-            v = _load_single_file_everion(dirpath, variable[0] + '.csv', variable[1].split(', '))
+            v = _load_single_file_everion(dirpath, variable[0] + '.csv', variable[1].replace(' ', '').split(','))
         except Exception as err:
             raise Exception("\n\t(!) Something went wrong with {}: {}".format(variable[0]+'.csv', err))
         if data.empty:
             data = v
         else:
             data = data.join(v, how='inner')
-
+    if downsample == '1s':
+        data = downsample_to_1hz(data)
+    elif downsample == '1min':
+        data = downsample_to_1min(data)
+    else:
+        pass
     return data
-
-
-def save_results(my_data, my_file):
-    try:
-        my_data.to_csv(my_file, encoding='utf-8', header=None, index=False)
-    except IOError:
-        raise IOError("File {} not Found".format(my_file))
-    except Exception:
-        raise Exception("Error while writing in {}".format(my_file))
 
 
 def downsample_to_1hz(e4_data):
@@ -160,7 +168,7 @@ def downsample_to_1min(e4_data):
 
 
 # Check if directory is compressed or not
-def file_to_df(dirpath, cfile):
+def _file_to_df(dirpath, cfile):
     if zipfile.is_zipfile(dirpath):
         directory = zipfile.ZipFile(dirpath)
         file = directory.open(cfile)
@@ -170,8 +178,8 @@ def file_to_df(dirpath, cfile):
 
 
 if __name__ == "__main__":
-    Data, IBI = load_results_e4("../data/ejemplo4")[0][0:100], load_results_e4("../data/ejemplo4")[1][0:100]
-    # Data = load_results_everion('../data/everion/Dataexport')
+    Data, IBI = loader_e4("../data/ejemplo4")[:][0:100]
+    # Data = loader_everion('../data/everion/Dataexport')
     # Data = downsample_to_1min(Data)
     print(Data)
     print(IBI)
