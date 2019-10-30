@@ -130,13 +130,14 @@ def insert_data(values):
 
 if __name__ == '__main__':
     # provisional
-    from . import file_loader as cm
+    from edwar.file_loader import e4 as cm
+
     try:
         from .data_to_db_adapter import adapt_features
     except ImportError:
         raise ImportError('File data_to_db_adapter not found. Run init_db.py to generate it')
     directory = '../data/ejemplo1'
-    results = cm.loader_e4(directory)[0][0:100]
+    results = cm.load_files(directory)[0][0:100]
     results = cm.downsample_to_1hz(results)
     # not provisional
     configFile = "db.ini"

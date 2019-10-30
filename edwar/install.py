@@ -2,16 +2,18 @@ import configparser
 import os
 import sys
 
-from . import file_loader as fl
+from edwar.file_loader import e4 as fl
 from . import init_db as idb
 
 __all__ = {
     'structure_configfile',
-    'all_ini',
-    'db_configfile'
+    'all_configfiles',
+    'database_configfile'
 }
 
-structure_ini_default = '''[DEVICE]
+structure_ini_default = '''[DEVICES]
+E4 = LoaderE4
+Everion = LoaderEverion
 
 [VARIABLES EVERION] # to read input files
 bop_1533550392847_VitalSign_gsr_5b2cc93e71b0710100a724db_1533160800_1533247259 = EDA
@@ -24,16 +26,16 @@ TEMP = TEMP
 ACC = ACCx, ACCy, ACCz
 
 [FEATURES EVERION] # to write output in database (data_type)
-eda_module = EDA, SCL, SCR
-acc_module = ACCx, ACCy, ACCz
-ibi_module = IBI
-temp_module = TEMP
+eda = EDA, SCL, SCR
+acc = ACCx, ACCy, ACCz
+ibi = IBI
+temp = TEMP
 
 [FEATURES E4]
-eda_module = EDA, SCL, SCR
-acc_module = ACCx, ACCy, ACCz
-ibi_module = IBI
-temp_module = TEMP
+eda = EDA, SCL, SCR
+acc = ACCx, ACCy, ACCz
+ibi = IBI
+temp = TEMP
 '''
 
 
@@ -42,7 +44,7 @@ def _configuration_structure(structureini_file):
     config1.optionxform = str
     if not os.path.exists(structureini_file):
         print("Configuration file {} not found. New {} created".format(structureini_file, structureini_file))
-        config1.add_section('DEVICE')
+        config1.add_section('DEVICES')
         with open(structureini_file, 'w') as confFile:
             config1.write(confFile)
 
@@ -50,22 +52,25 @@ def _configuration_structure(structureini_file):
 
     # DEVICE SECTION
     try:
-        device = config1.options(section='DEVICE')
-        if len(device) > 0:
-            device = device[0]
+        devices = config1.options(section='DEVICES')
     except Exception as err:
         raise Exception('Error while accesing to section DEVICE of {}: {}'.format(structureini_file, err))
-    try:
-        load_function = config1.get(section='DEVICE', option=device)
-    except configparser.NoOptionError:
-        load_function = None
+
+    if len(devices) == 0:
+        ans = 'y'
+    else:
+        ans = input('Do you want to create a new device (y/n): ')
+
+    device = None
     while not device:
         print('\n\t--Device Selection--')
+        if ans == 'y':
+            device = input('Name of new device: ')
         device = input('Device (E4, Everion or other): ')
         if device == 'E4':
-            load_function = 'loader_e4'
+            load_function = 'load_files'
         elif device == 'Everion':
-            load_function = 'loader_everion'
+            load_function = 'load'
     if not load_function:
         print('Select from list a function to load data')
         load_function = input('{}: '.format(fl.__all__))
@@ -176,9 +181,9 @@ def _user_identification():
     return user, pwd
 
 
-def all_ini():
+def all_configfiles():
     structure_configfile()
-    db_configfile()
+    database_configfile()
 
 
 def structure_configfile(default=True):
@@ -190,7 +195,7 @@ def structure_configfile(default=True):
     _configuration_structure(structure_ini_file)
     
 
-def db_configfile():
+def database_configfile():
     dbini_file = "db.ini"
     config2 = configparser.ConfigParser(inline_comment_prefixes="#")
     if not os.path.exists(dbini_file):

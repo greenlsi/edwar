@@ -1,7 +1,7 @@
 from scipy import signal
 # from edwar.EDA_wavelet_thresholding import correct_eda
 from .eda_features_extraction import calculate_eda_features
-from edwar import file_loader as cm
+from edwar.file_loader import e4 as cm
 from .adaptive_filtering import filt_accel, calculate_xyz, plot_eda
 
 
@@ -36,7 +36,7 @@ if __name__ == '__main__':
     STEP = 1   # FIR filter step
     LEAK = 0   # FIR filter leakage factor
     directory = '../data1/ejemplo1'
-    EDAdata = cm.loader_e4(directory)[0:1000]
+    EDAdata = cm.load_files(directory)[0:1000]
     EDAout = eda_module(EDAdata)
     xyz = calculate_xyz(EDAdata)
     plot_eda(EDAdata, EDAout, EDAdata['EDA'] - EDAout['EDA'], xyz, M, STEP, LEAK)

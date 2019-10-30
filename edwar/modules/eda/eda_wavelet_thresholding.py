@@ -3,8 +3,8 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import pywt
 from matplotlib.dates import DateFormatter
-from edwar import file_loader as cm
-from edwar.eda_explorer.load_files import butter_lowpass_filter
+from edwar.file_loader import e4 as cm
+from edwar.modules.eda_explorer import butter_lowpass_filter
 
 
 def accelerometer_study(acc_data):
@@ -150,7 +150,7 @@ def _plot_eda(data, out, reliability):
 if __name__ == '__main__':
     testing = 1
     directory = '../data1/ejemplo1'
-    EDAdata = cm.loader_e4(directory)[0:10000]
+    EDAdata = cm.load_files(directory)[0:10000]
     evaluate_reliability_acc(EDAdata)
     EDAout = correct_eda(EDAdata, 1.5, testing)
 

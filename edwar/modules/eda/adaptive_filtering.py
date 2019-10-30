@@ -3,9 +3,9 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.dates import DateFormatter
 from datetime import timedelta
-from edwar import eda_module as em
-from edwar.eda_module import nlms as nm, art_detect as ad
-from edwar import file_loader as cm
+from edwar.modules import eda as em
+from edwar.modules.eda import art_detect as ad, nlms as nm
+from edwar.file_loader import e4 as cm
 
 
 def calculate_xyz(data):
@@ -110,7 +110,7 @@ def plot_eda(data, y, e, xyz, m, step, leak):
 
 if __name__ == '__main__':
     directory = '../data/ejemplo3'
-    eda_data = cm.loader_e4(directory)[0:10000]
+    eda_data = cm.load_files(directory)[0:10000]
     # [6000:7000] # [7500:8500] # [1500:2500 # [6000:7000] # [7800:8600]
     accel = calculate_xyz(eda_data)
     M = 12     # FIR filter taps
