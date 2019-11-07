@@ -60,3 +60,43 @@ class Module(ABC):
     @abstractmethod
     def run_module(self, data):
         pass
+
+
+class EDAmodule(Module):
+    def __init__(self):
+        super().__init__()
+        self.inputs = {'EDA', 'ACCx', 'ACCy', 'ACCz'}
+        self.outputs = {'EDA', 'SCL', 'SCR'}
+
+    def run_module(self, data):
+        return data
+
+
+class ACCmodule(Module):
+    def __init__(self):
+        super().__init__()
+        self.inputs = {'ACCx', 'ACCy', 'ACCz'}
+        self.outputs = {'ACCx', 'ACCy', 'ACCz'}
+
+    def run_module(self, data):
+        return data
+
+
+class IBImodule(Module):
+    def __init__(self):
+        super().__init__()
+        self.inputs = {'IBI'}
+        self.outputs = {'IBI'}
+
+    def run_module(self, data):
+        return data
+
+
+class TEMPmodule(Module):
+    def __init__(self):
+        super().__init__()
+        self.inputs = {'TEMP'}
+        self.outputs = {'TEMP'}
+
+    def run_module(self, data):
+        return data

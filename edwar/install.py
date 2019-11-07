@@ -1,9 +1,8 @@
-import configparser
 import os
 import sys
 
-from edwar.file_loader import e4 as fl
-from . import init_db as idb
+from . import initialize_database as idb
+from .utils.rw_ini import Structure
 
 __all__ = {
     'structure_configfile',
@@ -26,100 +25,76 @@ TEMP = TEMP
 ACC = ACCx, ACCy, ACCz
 
 [FEATURES EVERION] # to write output in database (data_type)
-eda = EDA, SCL, SCR
-acc = ACCx, ACCy, ACCz
-ibi = IBI
-temp = TEMP
+eda_parser = EDA, SCL, SCR
+acc_parser = ACCx, ACCy, ACCz
+ibi_parser = IBI
+temp_parser = TEMP
 
 [FEATURES E4]
-eda = EDA, SCL, SCR
-acc = ACCx, ACCy, ACCz
-ibi = IBI
-temp = TEMP
+eda_parser = EDA, SCL, SCR
+acc_parser = ACCx, ACCy, ACCz
+ibi_parser = IBI
+temp_parser = TEMP
 '''
 
 
 def _configuration_structure(structureini_file):
-    config1 = configparser.ConfigParser(inline_comment_prefixes="#", allow_no_value=True)
-    config1.optionxform = str
-    if not os.path.exists(structureini_file):
-        print("Configuration file {} not found. New {} created".format(structureini_file, structureini_file))
-        config1.add_section('DEVICES')
-        with open(structureini_file, 'w') as confFile:
-            config1.write(confFile)
-
-    config1.read(structureini_file)
+    s = Structure(structureini_file)
 
     # DEVICE SECTION
-    try:
-        devices = config1.options(section='DEVICES')
-    except Exception as err:
-        raise Exception('Error while accesing to section DEVICE of {}: {}'.format(structureini_file, err))
-
+    devices = s.devices()
+    device = None
+    print('\n\t--Device Section--')
     if len(devices) == 0:
         ans = 'y'
     else:
+        print('Available devices:')
+        for dev in devices.keys():
+            print('\t-%s' % dev)
         ans = input('Do you want to create a new device (y/n): ')
+    if ans == 'y':
+        device = input('Name of new device: ')
+        s.set_device(device, '*')
 
-    device = None
     while not device:
-        print('\n\t--Device Selection--')
-        if ans == 'y':
-            device = input('Name of new device: ')
-        device = input('Device (E4, Everion or other): ')
-        if device == 'E4':
-            load_function = 'load_files'
-        elif device == 'Everion':
-            load_function = 'load'
-    if not load_function:
-        print('Select from list a function to load data')
-        load_function = input('{}: '.format(fl.__all__))
-    while load_function not in fl.__all__:
-        print("\n\t(!) Something went wrong: function %s not found\n" % load_function +
-              "Select from list a function to load data")
-        load_function = input('{}: '.format(fl.__all__))
-    config1['DEVICE'] = {device: load_function}
+        device = input('Select device to configure: ')
+        if device not in devices.keys():
+            print("\n\t(!) Something went wrong: Device %s not found\n" % device)
+            device = None
 
     # VARIABLES SECTION
-    variables_from_device = 'VARIABLES ' + device.upper()
-    try:
-        variables = config1.items(section=variables_from_device)
-    except configparser.NoSectionError:
-        variables = list()
-    except Exception as err:
-        raise Exception('Error while accessing to {}: {}'.format(variables_from_device, err))
+    variables = s.variables(device)
 
-    if not variables:
-        print('\n\t--Variable Selection--')
-        print('From every file select which variables will be used')
-        new_variables = dict()
-        file = 'file'
-        n = 0
-        while file:
-            n += 1
-            file = input('File %i name (without extension, e.g. .csv) to open (Press enter to exit): ' % n)
-            if file:
-                i = 0
-                variable = 'variable'
-                variables_set = set()
-                variables_per_file = ''
-                while variable:
-                    i += 1
-                    variable = input('Variable %i (Press enter to finish): ' % i)
-                    if variable:
-                        if variable in variables_set:
-                            print("\n\t(!) Something went wrong: Variable {} already declared\n".format(variable))
-                            i -= 1
-                        else:
-                            variables_set.add(variable)
-                            if variables_per_file:
-                                variables_per_file += ','
-                            variables_per_file += variable
-                    elif not variable and i == 1:
-                        print("\n\t(!) Something went wrong: At least one variable per file is expected\n")
-                        variable = 'variable'
-                        i = 0
-                new_variables[file] = variables_per_file
+    print('\n\t--Variable Selection--')
+    print('From every file select which variables will be used')
+    new_variables = dict()
+    file = 'file'
+    n = 0
+    while file:
+        n += 1
+        file = input('File %i name (without extension, e.g. .csv) to open (Press enter to exit): ' % n)
+        if file:
+            i = 0
+            variable = 'variable'
+            variables_set = set()
+            variables_per_file = ''
+            while variable:
+                i += 1
+                variable = input('Variable %i (Press enter to finish): ' % i)
+                if variable:
+                    if variable in variables_set:
+                        print("\n\t(!) Something went wrong: Variable {} already declared\n".format(variable))
+                        i -= 1
+                    else:
+                        variables_set.add(variable)
+                        if variables_per_file:
+                            variables_per_file += ','
+                        variables_per_file += variable
+                elif not variable and i == 1:
+                    print("\n\t(!) Something went wrong: At least one variable per file is expected\n")
+                    variable = 'variable'
+                    i = 0
+            new_variables[file] = variables_per_file
         config1[variables_from_device] = new_variables
 
     # FEATURES SECTION
@@ -187,19 +162,30 @@ def all_configfiles():
 
 
 def structure_configfile(default=True):
+    path = 'configuration'
+    if not os.path.exists(path):
+        os.mkdir(path)
     structure_ini_file = "structure.ini"
+    structure_ini_path = os.path.join(path, structure_ini_file)
+    if not os.path.exists(structure_ini_path):
+        print("Configuration file {} not found. New {} created".format(structure_ini_file, structure_ini_file))
+        open(structure_ini_path, "w+")
+
     if default:
-        f = open(structure_ini_file, "w")
+        f = open(structure_ini_path, "w")
         f.write(structure_ini_default)
         f.close()
-    _configuration_structure(structure_ini_file)
+    _configuration_structure(structure_ini_path)
     
 
 def database_configfile():
-    dbini_file = "db.ini"
-    config2 = configparser.ConfigParser(inline_comment_prefixes="#")
-    if not os.path.exists(dbini_file):
-        print("Configuration file {} not found. New {} created".format(dbini_file, dbini_file))
+    path = 'configuration'
+    if not os.path.exists(path):
+        os.mkdir(path)
+    db_ini_file = "database.ini"
+    db_ini_path = os.path.join(path, db_ini_file)
+    if not os.path.exists(db_ini_path):
+        print("Configuration file {} not found. New {} created".format(db_ini_file, db_ini_file))
         config2['DB'] = {'Host': '',
                          'Port': '',
                          'User': '',

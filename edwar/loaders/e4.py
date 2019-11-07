@@ -6,6 +6,11 @@ import pandas as pd
 from . import utils
 
 
+__all__ = {
+    'load_files'
+}
+
+
 def _load_single_file(directory, file, list_of_columns):
     # Load data
     f = utils.file_to_df(directory, file)

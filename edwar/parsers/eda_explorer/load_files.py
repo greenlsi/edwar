@@ -62,7 +62,7 @@ def loadData_Qsensor(filepath):
     try:
         header_info = pd.io.parsers.read_csv(filepath, nrows=5)
     except IOError:
-        print("Error!! Couldn't load file, make sure the filepath is correct and you are using a csv from the q sensor software\n\n")
+        print("Error!! Couldn't load_files file, make sure the filepath is correct and you are using a csv from the q sensor software\n\n")
         return
 
     # Get sample rate

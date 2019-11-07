@@ -2,6 +2,31 @@ import configparser
 import os
 import logging
 import mysql.connector as sql
+import pandas as pd
+
+
+__all__ = {
+    'save_in_db'
+}
+
+
+def _ts_transform(timestamp):
+    date_time = timestamp.strftime("%Y-%m-%d %H:%M:%S")
+    return date_time
+
+
+def adapt_features(data):
+    list_table_columns = ['data_type', 'ts', 'value']
+    ncols = len(data.columns)
+    nrows = len(data)
+    list_update = pd.DataFrame(index=range(0, ncols * nrows), columns=list_table_columns)
+    n = 0
+    for column in data.columns:
+        for index in range(0, nrows):
+            list_update.loc[n * nrows + index, list_table_columns] = [column, _ts_transform(data[column].index[index]),
+                                                                      float(data[column].values[index])]
+        n += 1
+    return list_update
 
 
 def _connect():
@@ -84,7 +109,7 @@ def _disconnect(cursor, conn):
     return 1
 
 
-def insert_data(values):
+def save_in_db(values):
     n = 0
     f = 0
     errors = []
@@ -93,7 +118,7 @@ def insert_data(values):
     try:
         cursor.execute('DESCRIBE %s' % tb)
     except Exception as err:
-        raise Exception("\n\t(!) Something went wrong in insert_data() function while getting columns " +
+        raise Exception("\n\t(!) Something went wrong in save_in_db() function while getting columns " +
                         "from table `{}`: {}".format(tb, err))
     else:
         tb_columns = [i[0] for i in cursor.fetchall()]
@@ -130,12 +155,12 @@ def insert_data(values):
 
 if __name__ == '__main__':
     # provisional
-    from edwar.file_loader import e4 as cm
+    from edwar.loaders import e4 as cm
 
     try:
         from .data_to_db_adapter import adapt_features
     except ImportError:
-        raise ImportError('File data_to_db_adapter not found. Run init_db.py to generate it')
+        raise ImportError('File data_to_db_adapter not found. Run initialize_database.py to generate it')
     directory = '../data/ejemplo1'
     results = cm.load_files(directory)[0][0:100]
     results = cm.downsample_to_1hz(results)
@@ -144,4 +169,4 @@ if __name__ == '__main__':
 
     logging.info('\nWelcome to data base manager')
     up_data = adapt_features(results)
-    insert_data(up_data)
+    save_in_db(up_data)

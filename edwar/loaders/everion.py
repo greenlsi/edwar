@@ -4,6 +4,10 @@ import pandas as pd
 
 from . import utils
 
+__all__ = {
+    'load_files'
+}
+
 
 def _load_single_file(directory, file, list_of_columns):
     # Load data
@@ -28,7 +32,7 @@ def _load_single_file(directory, file, list_of_columns):
     return data
 
 
-def load(dirpath, downsample=None):
+def load_files(dirpath, downsample=None):
     structure_file = "structure.ini"
     if not os.path.exists(structure_file):
         raise Exception("\n\t(!) Something went wrong: Configuration file {} not found".format(structure_file))
@@ -56,6 +60,6 @@ def load(dirpath, downsample=None):
 
 
 if __name__ == '__main__':
-    Data = load('../data/everion/Dataexport')
+    Data = load_files('../data/everion/Dataexport')
     Data = utils.downsample_to_1min(Data)
     print(Data)

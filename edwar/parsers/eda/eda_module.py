@@ -1,7 +1,7 @@
 from scipy import signal
 # from edwar.EDA_wavelet_thresholding import correct_eda
 from .eda_features_extraction import calculate_eda_features
-from edwar.file_loader import e4 as cm
+from edwar.loaders import e4 as cm
 from .adaptive_filtering import filt_accel, calculate_xyz, plot_eda
 
 

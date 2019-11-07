@@ -3,9 +3,9 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.dates import DateFormatter
 from datetime import timedelta
-from edwar.modules import eda as em
-from edwar.modules.eda import art_detect as ad, nlms as nm
-from edwar.file_loader import e4 as cm
+from edwar.parsers import eda as em
+from edwar.parsers.eda import art_detect as ad, nlms as nm
+from edwar.loaders import e4 as cm
 
 
 def calculate_xyz(data):

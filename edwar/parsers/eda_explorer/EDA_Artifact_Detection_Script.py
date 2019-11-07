@@ -199,7 +199,7 @@ def getSVMFeatures(key):
 
 def classify(filepath,classifierList,loadDataFunction):
     '''
-    This function wraps other functions in order to load, classify, and return the label for each 5 second epoch of Q sensor data1.
+    This function wraps other functions in order to load_files, classify, and return the label for each 5 second epoch of Q sensor data1.
 
     INPUT:
         filepath:               string, path to input file

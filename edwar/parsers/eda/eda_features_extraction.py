@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import ledapy
 from numpy import array as npa
 from matplotlib.dates import DateFormatter
-from edwar.file_loader import e4 as cm
+from edwar.loaders import e4 as cm
 
 
 def calculate_eda_features(eda_data):
@@ -46,7 +46,7 @@ def plot_scl(eda_data):
 
 
 if __name__ == '__main__':
-    from edwar.modules import eda as ed
+    from edwar.parsers import eda as ed
 
     # Prueba:
     directory = '../data/ejemplo1'
