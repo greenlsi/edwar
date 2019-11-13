@@ -1,11 +1,14 @@
-import configparser
 import os
 import mysql.connector as sql
+
+from .utils.rw_ini import DataBase, Structure
 
 
 __all__ = {
     'connect',
-    'test_connect'
+    'test_connect',
+    'select_database',
+    'select_table'
 }
 
 
@@ -20,12 +23,12 @@ def test_connect(host, port, user, pwd):
         if conn.is_connected():
             cursor = conn.cursor()
         else:
-            raise IOError("\n\t(!) Connection went wrong: cursor could not be created\n")
+            raise ConnectionError("(!) Connection went wrong: cursor could not be created")
     except sql.errors.Error as err:
         if err.errno == sql.errorcode.ER_ACCESS_DENIED_ERROR:
-            raise ValueError("\n\t(!) Something is wrong with your user name or password\n")
+            raise ConnectionRefusedError("(!) Something is wrong with your user name or password")
         else:
-            raise IOError("\n\t(!) Connection went wrong: {}\n".format(err))
+            raise ConnectionError("(!) Connection went wrong: {}".format(err))
     else:
         return conn, cursor
 
@@ -38,23 +41,21 @@ def connect():
     # Config data
     config_file = "db.ini"
     if not os.path.exists(config_file):
-        raise Exception("\n\t(!) Something went wrong: Configuration file {} not found".format(config_file))
+        raise FileNotFoundError("(!) Something went wrong: Configuration file {} not found".format(config_file))
 
     structure_file = "structure.ini"
     if not os.path.exists(structure_file):
-        raise Exception("\n\t(!) Something went wrong: Configuration file {} not found".format(structure_file))
-    config = configparser.ConfigParser(inline_comment_prefixes="#")
-    config.read(config_file)
-    try:
-        user = config.get("DB", "User")
-        pwd = config.get("DB", "Password")
-        host = config.get("DB", "Host")
-        port = config.get("DB", "Port")
-        db_name = config.get("DB", "DB_name")
-        tb_name = config.get("DB", "Tb_name")
-    except Exception as err:
-        raise Exception("\n\t(!) Something went wrong reading {}: {}".format(config_file, err) +
-                        "\n\tCheck file or remove it ")
+        raise FileNotFoundError("(!) Something went wrong: Configuration file {} not found".format(structure_file))
+
+    d = DataBase()
+
+    user, pwd = d.user()
+    if (user or pwd) is None:
+        raise ValueError("(!) Something went wrong: Missing user identification")
+    host, port = d.host()
+    if (host or port) is None:
+        raise ValueError("(!) Something went wrong: Missing connection parameters")
+    db_name, tb_name = d.database(), d.table()
 
     # Connection test
     conn, cursor = test_connect(host, port, user, pwd)
@@ -79,21 +80,13 @@ def connect():
             disconnect(cursor, conn)
             raise Exception("\n\t(!) Something went wrong: exceeded maximum number of attempts to select a table\n")
         tb_name = select_table(cursor, tb_name)
-    if not default_function:
-        ans = input('Do you need a personalized function to adapt features to your table (y/n): ')
-        if not ans == 'y':
-            default_function = True
-    gen_prepare_features(default_function)
     print("Table {} selected to upload data".format(tb_name))
 
-    config['DB'] = {'Host': host,
-                    'Port': port,
-                    'User': user,
-                    'Password': pwd,
-                    'DB_name': db_name,
-                    'Tb_name': tb_name}
-    with open('db.ini', 'w') as confFile:
-        config.write(confFile)
+    d.set_user(user, pwd)
+    d.set_host(host, port)
+    d.set_database(db_name)
+    d.set_table(tb_name)
+    d.update_file()
 
     disconnect(cursor, conn)
     return host, port, user, pwd, db_name, tb_name
@@ -141,7 +134,7 @@ def select_database(cursor, db_name=None):
     try:
         cursor.execute("USE {}".format(db_name))
     except sql.errors.Error as err:
-        print("\n\t(!) Something went wrong while selecting database {}: {}\n".format(db_name, err))
+        print("\n\t(!) Something went wrong while selecting database '{}': {}\n".format(db_name, err))
         db_name = None
     return db_name
 
@@ -151,13 +144,18 @@ def create_table(cursor):
     tb_name = input('Name of the new table: ')
 
     print('Default features are {}'.format(default_features))
-    if_new_features = input('Do you want to use other features? (if yes, features declared in structure.ini file will '
-                            + 'be used) (y/n): ')
+    if_new_features = input('Do you want to use other features? (if yes, features declared for a given device' +
+                            'in configuration file will be used) (y/n): ')
     if if_new_features == 'y':
-        structure_file = "structure.ini"
-        config = configparser.ConfigParser(inline_comment_prefixes="#")
-        config.read(structure_file)
-        out_modules = config.items(section='FEATURES')
+        s = Structure()
+        print('\nDevices: ')
+        for d in s.devices().keys():
+            print('\t-%s' % d)
+        device = input("For which device do you want to create table '%s'?: " % tb_name)
+        while device not in s.devices().keys():
+            print("\n\t(!) Something went wrong while selecting device '{}': device not found\n".format(device))
+            device = input("For which device do you want to create table '%s'?: " % tb_name)
+        out_modules = s.features(device)
         features = ()
         for module in out_modules:
             features += tuple(module[1].replace(' ', '').split(','))
@@ -229,22 +227,6 @@ personalized_function = '''
 def adapt_features(data):
     "your code goes here"  # TODO
 '''
-
-
-def gen_prepare_features(default=True):
-    prepare_features_file = "data_to_db_adapter.py"
-    ans = 'y'
-    if os.path.exists(prepare_features_file):
-        ans = input('%s already exists, do you want to overwrite it? (y/n): ' % prepare_features_file)
-    if ans == 'y':
-        f = open(prepare_features_file, "w")
-        if default:
-            f.write(function)
-        else:
-            f.write(personalized_function)
-        f.close()
-    else:
-        pass
 
 
 if __name__ == '__main__':

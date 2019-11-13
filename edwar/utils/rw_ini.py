@@ -24,10 +24,14 @@ class Structure:
         self._devices[device] = load_function
 
     def remove_device(self, device):
-        if self.check_device(device):
+        try:
+            self.check_device(device)
+        except KeyError:
+            pass
+        else:
             del self._devices[device]
             self.parser.remove_option('DEVICES', device)
-            self.parser.remove_section('VARIABLES ' + device.upper())
+            self.parser.remove_section('VARIABLES ' + device.upper())  # Nothing happens if no section
             self.parser.remove_section('FEATURES ' + device.upper())
 
     def check_device(self, device):
@@ -60,7 +64,7 @@ class Structure:
             try:
                 del self.parser['VARIABLES ' + device.upper()][file]
             except KeyError:
-                raise KeyError("No file %s found for device %s" % (file, device))
+                pass
 
     def remove_all_files(self, device):
         if self.check_device(device):
@@ -112,7 +116,7 @@ class Structure:
             try:
                 del self.parser['FEATURES ' + device.upper()][module]
             except KeyError:
-                raise KeyError("No module %s found for device %s" % (module, device))
+                pass
 
     def remove_all_parsers(self, device):
         if self.check_device(device):
@@ -152,10 +156,10 @@ class DataBase:
     def __init__(self, directory='configuration', databasefile='database.ini'):
         self.parser = configparser.ConfigParser(inline_comment_prefixes="#", allow_no_value=True)
         self.parser.optionxform = str
-        ok = self.parser.read(os.path.join(directory, databasefile))
+        self.databasefile = os.path.join(directory, databasefile)
+        ok = self.parser.read(self.databasefile)
         if not ok:
             raise FileNotFoundError("No file %s found" % databasefile)
-        self.databasefile = databasefile
         try:
             self._db = dict(self.parser.items(section='DB'))
         except configparser.NoSectionError:
@@ -215,6 +219,3 @@ class DataBase:
     def update_file(self):
         with open(self.databasefile, 'w') as confFile:
             self.parser.write(confFile)
-
-
-
