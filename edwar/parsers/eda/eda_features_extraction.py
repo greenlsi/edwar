@@ -2,7 +2,8 @@ import matplotlib.pyplot as plt
 import ledapy
 from numpy import array as npa
 from matplotlib.dates import DateFormatter
-from edwar.loaders import e4 as cm
+from ...loaders import utils as cm
+from ...loaders import e4
 
 
 def calculate_eda_features(eda_data):
@@ -50,9 +51,9 @@ if __name__ == '__main__':
 
     # Prueba:
     directory = '../data/ejemplo1'
-    EDA = cm.load_files(directory)[0].loc[:, ['EDA']]
+    EDA = e4.load_files(directory)[0].loc[:, ['EDA']]
     EDA = EDA[0:10000]
-    EDA['filtered_eda'] = ed.butter_lowpass_filter(EDA['EDA'], 1.0, 8, 6)
+    EDA['filtered_eda'] = e4.butter_lowpass_filter(EDA['EDA'], 1.0, 8, 6)
     EDA = cm.downsample_to_1hz(EDA)
 
     EDA = calculate_eda_features(EDA)

@@ -1,15 +1,21 @@
 import configparser
 import os
+import io
+import base64
+import hashlib
+from Crypto import Random
+from Crypto.Cipher import AES
 
 
 class Structure:
-    def __init__(self, directory='configuration', structurefile='structure.ini'):
+    def __init__(self, settings):
         self.parser = configparser.ConfigParser(inline_comment_prefixes="#", allow_no_value=True)
         self.parser.optionxform = str
-        self.structurefile = os.path.join(directory, structurefile)
+        self.structurefile = os.path.join(settings.path, settings.structureini)
         ok = self.parser.read(self.structurefile)
         if not ok:
-            raise FileNotFoundError("No file %s found" % structurefile)
+            raise FileNotFoundError("Configuration file {} found. ".format(settings.structureini) +
+                                    "Run edwar.configure.devices() to create it")
         try:
             self._devices = dict(self.parser.items(section='DEVICES'))
         except configparser.NoSectionError:
@@ -45,7 +51,7 @@ class Structure:
             try:
                 v = dict(self.parser.items(section='VARIABLES ' + device.upper()))
             except configparser.NoSectionError:
-                pass
+                self.parser.add_section('VARIABLES ' + device.upper())
         return v
 
     def set_variable(self, device, file, variables):
@@ -54,10 +60,7 @@ class Structure:
     def set_variables(self, device, variables):
         variables.update(self.variables(device))
         if self.check_device(device):
-            if not variables:
-                self.parser.add_section('VARIABLES ' + device.upper())
-            else:
-                self.parser['VARIABLES ' + device.upper()] = variables
+            self.parser['VARIABLES ' + device.upper()] = variables
 
     def remove_file(self, device, file):
         if self.check_device(device):
@@ -97,7 +100,7 @@ class Structure:
             try:
                 f = dict(self.parser.items(section='FEATURES ' + device.upper()))
             except configparser.NoSectionError:
-                pass
+                self.parser.add_section('FEATURES ' + device.upper())
         return f
 
     def set_feature(self, device, module, features):
@@ -106,10 +109,7 @@ class Structure:
     def set_features(self, device, features):
         features.update(self.features(device))
         if self.check_device(device):
-            if not features:
-                self.parser.add_section('FEATURES ' + device.upper())
-            else:
-                self.parser['FEATURES ' + device.upper()] = features
+            self.parser['FEATURES ' + device.upper()] = features
 
     def remove_parser(self, device, module):
         if self.check_device(device):
@@ -125,7 +125,7 @@ class Structure:
             except configparser.NoSectionError:
                 pass
 
-    def lock_module(self, device, module):
+    def lock_module(self, device, module):  # TODO: change raise error to warning log
         features_section = 'FEATURES ' + device.upper()
         if self.check_device(device):
             if module in self.features(device).keys():
@@ -136,13 +136,12 @@ class Structure:
                 msg = "No unlocked module %s found for device %s" % (module, device)
                 raise KeyError(msg)
 
-    def unlock_module(self, device, module):
+    def unlock_module(self, device, module):  # TODO: same as upper
         features_section = 'FEATURES ' + device.upper()
-        lockfile = '.' + module
+        lockmodule = '.' + module
         if self.check_device(device):
-            if lockfile in self.features(device).keys():
-                self.parser[features_section][module] = self.parser[features_section].pop(
-                    lockfile)
+            if lockmodule in self.features(device).keys():
+                self.parser[features_section][module] = self.parser[features_section].pop(lockmodule)
             else:
                 msg = "No locked module %s found for device %s" % (module, device)
                 raise KeyError(msg)
@@ -153,28 +152,35 @@ class Structure:
 
 
 class DataBase:
-    def __init__(self, directory='configuration', databasefile='database.ini'):
+    def __init__(self, settings, password):
         self.parser = configparser.ConfigParser(inline_comment_prefixes="#", allow_no_value=True)
         self.parser.optionxform = str
-        self.databasefile = os.path.join(directory, databasefile)
-        ok = self.parser.read(self.databasefile)
-        if not ok:
-            raise FileNotFoundError("No file %s found" % databasefile)
+        self.databasefile = os.path.join(settings.path, settings.databaseini)
+        self.password = self.complete_password(password)
+
+        with open(self.databasefile, 'r') as confFile:
+            ciphertext = confFile.read()
+
+        try:
+            text = AESCipher(self.password).decrypt(ciphertext)
+        except UnicodeDecodeError:
+            raise KeyError('Wrong password. Unable to read {}'.format(settings.databaseini))
+        self.parser.read_string(text)
+
         try:
             self._db = dict(self.parser.items(section='DB'))
         except configparser.NoSectionError:
-            self.parser.add_section('DB')
-            self._db = dict()
+            raise KeyError('Incorrect syntax of {} file. Decryption must be wrong.'.format(settings.databaseini))
 
     def host(self):
         try:
             host = self.parser.get('DB', 'Host')
         except configparser.NoOptionError:
-            host = None
+            host = ''
         try:
             port = self.parser.get('DB', 'Port')
         except configparser.NoOptionError:
-            port = None
+            port = ''
         return host, port
 
     def set_host(self, host, port):
@@ -185,11 +191,11 @@ class DataBase:
         try:
             user = self.parser.get('DB', 'User')
         except configparser.NoOptionError:
-            user = None
+            user = ''
         try:
             pwd = self.parser.get('DB', 'Password')
         except configparser.NoOptionError:
-            pwd = None
+            pwd = ''
         return user, pwd
 
     def set_user(self, user, pwd):
@@ -200,7 +206,7 @@ class DataBase:
         try:
             database = self.parser.get('DB', 'DB_name')
         except configparser.NoOptionError:
-            database = None
+            database = ''
         return database
 
     def set_database(self, database):
@@ -210,12 +216,54 @@ class DataBase:
         try:
             table = self.parser.get('DB', 'Tb_name')
         except configparser.NoOptionError:
-            table = None
+            table = ''
         return table
 
     def set_table(self, table):
         self.parser.set('DB', 'Tb_name', table)
 
     def update_file(self):
+        user, pw = self.user()
+        pw = self.complete_password(pw) if pw else self.password
+        buf = io.StringIO("")
+        self.parser.write(buf)
+        text = buf.getvalue()
+        ciphertext = AESCipher(pw).encrypt(text)
         with open(self.databasefile, 'w') as confFile:
-            self.parser.write(confFile)
+            confFile.write(ciphertext.decode('UTF-8'))
+        confFile.close()
+
+    @staticmethod
+    def complete_password(pwd):
+        if not isinstance(pwd, str):
+            raise TypeError('Password must be a string with between 8 and 16 characters')
+        default = '0123456789abcdef'
+        filled = len(pwd) if len(pwd) <= 16 else 16
+        full_password = pwd[0:15] + default[0:16-filled]
+        return full_password
+
+
+class AESCipher(object):
+
+    def __init__(self, key):
+        self.bs = AES.block_size
+        self.key = hashlib.sha256(key.encode()).digest()
+
+    def encrypt(self, raw):
+        raw = self._pad(raw)
+        iv = Random.new().read(AES.block_size)
+        cipher = AES.new(self.key, AES.MODE_CBC, iv)
+        return base64.b64encode(iv + cipher.encrypt(raw.encode()))
+
+    def decrypt(self, enc):
+        enc = base64.b64decode(enc)
+        iv = enc[:AES.block_size]
+        cipher = AES.new(self.key, AES.MODE_CBC, iv)
+        return self._unpad(cipher.decrypt(enc[AES.block_size:])).decode('utf-8')
+
+    def _pad(self, s):
+        return s + (self.bs - len(s) % self.bs) * chr(self.bs - len(s) % self.bs)
+
+    @staticmethod
+    def _unpad(s):
+        return s[:-ord(s[len(s) - 1:])]

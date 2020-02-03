@@ -1,76 +1,67 @@
 import os
-import sys
 
-from . import initialize_database as idb
 from . import configure
 
 __all__ = {
-    'structure_configfile',
-    'all_configfiles',
-    'database_configfile'
+    'structure_cfg',
+    'all_cfgs',
+    'database_cfg'
 }
 
-structure_ini_default = '''[DEVICES]
-E4 = LoaderE4
+__structure_ini_default = '''[DEVICES]
 Everion = LoaderEverion
+E4 = LoaderE4
 
-[VARIABLES EVERION] # to read input files
-bop_1533550392847_VitalSign_gsr_5b2cc93e71b0710100a724db_1533160800_1533247259 = EDA
-bop_1533550392847_VitalSign_hr_5b2cc93e71b0710100a724db_1533160800_1533247259 = HR
+[VARIABLES EVERION]
+gsr = EDA
+IBI = IBI
+objtemp = TEMP
+
+[FEATURES EVERION]
+EDAparser = EDA, SCL, SCR
+ACCparser = ACCx, ACCy, ACCz
+IBIparser = IBI
+TEMPparser = TEMP
 
 [VARIABLES E4]
+ACC = ACCx,ACCy,ACCz
 EDA = EDA
-IBI = IBI
 TEMP = TEMP
-ACC = ACCx, ACCy, ACCz
-
-[FEATURES EVERION] # to write output in database (data_type)
-eda_parser = EDA, SCL, SCR
-acc_parser = ACCx, ACCy, ACCz
-ibi_parser = IBI
-temp_parser = TEMP
+IBI = IBI
 
 [FEATURES E4]
-eda_parser = EDA, SCL, SCR
-acc_parser = ACCx, ACCy, ACCz
-ibi_parser = IBI
-temp_parser = TEMP
-'''
-
-database_ini_default = '''[DB]
-Host = 
-Port = 
-User = 
-Password = 
-DB_name = 
-tb_name = 
+IBIparser = IBI
+TEMPparser = TEMP
+EDAparser = EDA, SCL, SCR
+ACCparser = ACCx, ACCy, ACCz
 '''
 
 
-def _host_configuration():
+def __host_configuration():
     print('\t--Host Configuration--')
     host = input('Host address: ')
     port = input('Port number: ')
     return host, port
 
 
-def _user_identification():
+def __user_identification():
     print('\t--User Identification--')
     user = input('User Name: ')
     pwd = input('Password: ')
     return user, pwd
 
 
-def all_configfiles(default=True):
-    structure_configfile(default)
-    database_configfile()
+def all_cfgs(settings=configure.conf.Settings(), default=True):
+    structure_cfg(settings=settings, default=default)
+    database_cfg(settings=settings)
 
 
-def structure_configfile(default=True):
-    path = 'configuration'
+def structure_cfg(settings=configure.conf.Settings(), default=True):
+    path = settings.path
     if not os.path.exists(path):
+        print("Configuration directory {} not found. New {} created".format(path, path))
         os.mkdir(path)
-    structure_ini_file = "structure.ini"
+    structure_ini_file = settings.structureini
     structure_ini_path = os.path.join(path, structure_ini_file)
     if not os.path.exists(structure_ini_path):
         print("Configuration file {} not found. New {} created".format(structure_ini_file, structure_ini_file))
@@ -78,20 +69,24 @@ def structure_configfile(default=True):
 
     if default:
         f = open(structure_ini_path, "w")
-        f.write(structure_ini_default)
+        f.write(__structure_ini_default)
         f.close()
-    configure.devices()
+    configure.devices(settings)
     
 
-def database_configfile():
-    path = 'configuration'
+def database_cfg(settings=configure.conf.Settings()):
+    path = settings.path
     if not os.path.exists(path):
+        print("Configuration directory {} not found. New {} created".format(path, path))
         os.mkdir(path)
-    db_ini_file = "database.ini"
+    db_ini_file = settings.databaseini
     db_ini_path = os.path.join(path, db_ini_file)
     if not os.path.exists(db_ini_path):
+        order = "w+"
         print("Configuration file {} not found. New {} created".format(db_ini_file, db_ini_file))
-        f = open(db_ini_path, "w+")
-        f.write(database_ini_default)
-        f.close()
-    configure.connection()
+    else:
+        order = "w"
+    f = open(db_ini_path, order)
+    f.write(b'8S8aBTETssJ4JL4or2ld/3DmqST1Dx6qDQxsM6SBBIs='.decode('UTF-8'))
+    f.close()
+    configure.connection_database('', settings)

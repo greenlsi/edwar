@@ -1,8 +1,10 @@
+import os
 
-def save_in_csv(my_data, my_file):
+
+def save_in_csv(path, my_file, my_data):
     try:
-        my_data.to_csv(my_file, encoding='utf-8', header=None, index=False)
+        my_data.to_csv(os.path.join(path, my_file), encoding='utf-8', index=True)
     except IOError:
-        raise IOError("File {} not Found".format(my_file))
+        raise IOError("Path {} not Found".format(path))
     except Exception:
         raise Exception("Error while writing in {}".format(my_file))

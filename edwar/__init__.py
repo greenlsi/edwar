@@ -1,3 +1,3 @@
 from . import install
 from . import configure
-from . import initialize_database
+from .runner import Run

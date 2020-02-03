@@ -1,13 +1,14 @@
-from distutils.core import setup
+from setuptools import setup, find_packages
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setup(
   name='edwar_project',         # How you named your package folder (MyLib)
-  packages=['edwar_project'],   # Chose the same as "name"
+  packages=find_packages(),   # Chose the same as "name"
   version='0.9.2',      # Start with a small number and increase it with every change you make
   license='MIT',        # Chose a license
+  include_package_data=True,
   description='signal Error Detection for WBSN And data1 Recovery',   # Give a short description about your library
   long_description=long_description,
   long_description_content_type="text/markdown",
@@ -22,8 +23,10 @@ setup(
           'matplotlib',
           'datetime',
           'configparser',
+          'pycryptodome',
           'PyWavelets',
           'scipy',
+          'mysql',
           'mysql-connector-python',
           'ledapy'
   ],

@@ -1,411 +1,644 @@
-from .utils.rw_ini import Structure
-from .utils.rw_ini import DataBase
-from .initialize_database import test_connect, connect
+import getpass
+import os
+import mysql.connector as sql
+
+from .utils import db_connection as db
+from .utils import configuration as conf
+from .loaders.loader import __enum__
 
 
-def devices():
+__all__ = {
+    'settings_location',
+    'devices',
+    'data_files',
+    'parsers',
+    'connection_database'
+}
+
+
+def __check_binary_answer(question, *args):
+    def check_valid(answer):
+        valid_list = list(args) + ['y', 'n', 'Y', 'N', '']
+        if answer not in valid_list:
+            answer = None
+        return answer
+    ans = check_valid(input(question).lstrip().rstrip())
+    while ans is None:
+        print("\n\t(!) Something went wrong: Invalid input\n")
+        ans = check_valid(input(question))
+    return ans.lower()
+
+
+def __check_answer(question, password=False, in_list=None, out_list=None, substitute_dict=None, option_list=None,
+                   not_an_option_list=None, extra_info_invalid=None, extra_info_not_found=None, extra_info_exists=None):
+    in_list = list() if in_list is None else in_list
+    out_list = list() if out_list is None else out_list
+    substitute_dict = dict() if substitute_dict is None else substitute_dict
+    option_list = list() if option_list is None else option_list
+    not_an_option_list = list() if not_an_option_list is None else not_an_option_list
+    extra_info_invalid = '' if extra_info_invalid is None else '. ' + extra_info_invalid
+    extra_info_not_found = '' if extra_info_not_found is None else '. ' + extra_info_not_found
+    extra_info_exists = '' if extra_info_exists is None else '. ' + extra_info_exists
+    name = None
+    while name is None:
+        if password:
+            name = getpass.getpass(question, stream=None)
+        else:
+            name = input(question)
+            name = name.lstrip().rstrip()
+        for v in substitute_dict.keys():
+            if name == v:
+                name = substitute_dict[v]
+        if name in option_list:
+            pass
+        elif any([o in name for o in not_an_option_list]):
+            print("\n\t(!) Something went wrong: Invalid input '{}'".format(name) + extra_info_invalid + "\n")
+            name = None
+        elif in_list and name not in in_list:
+            print("\n\t(!) Something went wrong: '{}' not found".format(name) + extra_info_not_found + "\n")
+            name = None
+        elif name in out_list:
+            print("\n\t(!) Something went wrong: '{}' already exists".format(name) + extra_info_exists + "\n")
+            name = None
+        else:
+            pass
+    return name
+
+
+def settings_location(path=None, databaseini=None, structureini=None):
+    s = conf.Settings(path, databaseini, structureini)
+    return s
+
+
+def devices(settings=conf.Settings()):
     finished = False
     while not finished:
-        print('\n\t--Device Configuration--')
-        dev = print_devices()
-        device = input("\nName of device (press 'enter' to exit): ")
+        print('\n\t\t--Device Configuration--')
+        dev = print_devices(settings)
+        device = __check_answer("Name of device to configure (press 'enter' to exit): ", option_list=[''])
         if not device:
             finished = True
         else:
             if device in dev.keys():
-                msg = "New name of device '%s' (press 'enter' to keep name, 'space' to remove it or type 'back' to " \
-                      "go back): " % device
-                newdevice = input(msg)
-                while newdevice in dev.keys():
-                    print("\n\t(!) Something went wrong: Device %s already exists\n" % newdevice)
-                    newdevice = input(msg)
+                msg = "New name of device '{}' (press 'enter' to keep name, type 'r' to remove it or 'b' to " \
+                      "go back): ".format(device)
+                newdevice = __check_answer(msg, out_list=dev.keys(), option_list=['', 'r', 'b'])
                 load_function = dev[device]
             else:
-                if device[0] == ' ':
-                    print("\n\t(!) Something went wrong: Invalid input '%s'\n" % device)
-                    newdevice = 'back'
+                create = __check_binary_answer("Device '{}' not found, ".format(device) +
+                                               "do you want to create it? (y/N): ")
+                if create == 'y':
+                    newdevice = device
                 else:
-                    if not dev:
-                        create = 'y'
-                    else:
-                        create = input("Device '%s' not found, do you want to create it? (y/n): " % device)
-                    if create == 'y':
-                        newdevice = None
-                    else:
-                        newdevice = 'back'
+                    newdevice = 'b'
                 load_function = None
-            if newdevice == ' ':
-                todelete = input("Device '%s' will be deleted. Are you sure? (y/n): " % device)
+            if newdevice == 'r':
+                todelete = __check_binary_answer("Device '{}' will be deleted. Are you sure? (y/N): ".format(device))
                 if todelete == 'y':
-                    remove_device(device)
-                newdevice = 'back'
+                    conf.remove_device(settings, device)
+                newdevice = 'b'
 
-            if newdevice != 'back':
-                if load_function:
-                    msg = "New function loader (press 'enter' to keep the current function %s): " % load_function
-                    new_load_function = input(msg)
-                    if new_load_function and (new_load_function[0] == ' ' or new_load_function[0] == '.'):
-                        print("\n\t(!) Something went wrong: Invalid input '%s'\n" % new_load_function)
+            if newdevice != 'b':
+                new_load_function = 'invalid'
+                while new_load_function == 'invalid':
+                    print('Available loaders: ')
+                    loaders = __enum__
+                    if loaders:
+                        for p in loaders:
+                            print('\t-{}'.format(p))
+                        msg = "New function loader (press 'enter' to keep the current loader '{}'): ".\
+                            format(load_function)
+                        msg1 = "If your loader is not listed, leave 'None' as value of current loader"
+                        new_load_function = __check_answer(msg, in_list=loaders, option_list=[''],
+                                                           extra_info_not_found=msg1)
+
+                    else:
+                        print("\n\t(!) No loaders found\n")
                         new_load_function = None
-                else:
-                    msg = "New function loader (press 'enter' to exit): "
-                    new_load_function = input(msg)
-                    if new_load_function and (new_load_function[0] == ' ' or new_load_function[0] == '.'):
-                        print("\n\t(!) Something went wrong: Invalid input '%s'\n" % new_load_function)
-                        new_load_function = None
 
-                edit_device(device, new_device=newdevice, new_loader=new_load_function)
-                input_files(newdevice if newdevice else device)
-                parsers(newdevice if newdevice else device)
+                conf.edit_device(settings, device, new_device=newdevice, new_loader=new_load_function)
+                data_files(newdevice if newdevice else device, settings)
+                parsers(newdevice if newdevice else device, settings)
 
 
-def edit_device(device, new_device=None, new_loader=None):
-    s = Structure()
-    dev = s.devices()
-    try:
-        loader = dev[device]
-    except KeyError:
-        loader = None
-    if new_device and not isinstance(new_device, str):
-        raise TypeError("Parameter 'new_device' expected to be type 'string'")
-    if new_loader and not isinstance(new_loader, str):
-        raise TypeError("Parameter 'new_loader' expected to be type 'string'")
-    try:
-        variables = s.variables(device)
-        features = s.features(device)
-    except KeyError:
-        variables = dict()
-        features = dict()
-    s.remove_device(device)
-    s.set_device(new_device if new_device else device, new_loader if new_loader else loader)
-    s.set_variables(new_device if new_device else device, variables)
-    s.set_features(new_device if new_device else device, features)
-    s.update_file()
-
-
-def print_devices():
-    dev = get_devices()
+def print_devices(settings=conf.Settings()):
+    dev = conf.get_devices(settings)
     if dev:
-        print("\nCurrent registered devices:")
-        print('\n{:<50} {:<3} {:<50}'.format('[DEVICE]', ' ', '[LOAD FUNCTION]'))
+        maxlendev = 0
+        maxlenload = 0
+        for d in dev.keys():
+            maxlendev = max(maxlendev, len(d))
+            maxlenload = max(maxlenload, len(dev[d]))
+        header1 = 'DEVICES'
+        header2 = 'LOAD FUNCTION'
+        maxlendev = max(maxlendev, len(header1)) + 2
+        maxlenload = max(maxlenload, len(header2)) + 2
+        table_format = '| {:^' + str(maxlendev) + '}| {:^' + str(maxlenload) + '}|'
+        sep = '+' + '-' * (maxlendev + 1) + '+' + '-' * (maxlenload + 1) + '+'
+        print("\nCurrent installed devices:\n")
+        print(sep)
+        print(table_format.format('DEVICE', 'LOAD FUNCTION'))
+        print(sep)
         for v in dev.keys():
-            print('{:<50} {:<3} {:<50}'.format(v, '-->', dev[v]))
+            print(table_format.format(v, dev[v]))
+        print(sep)
     else:
         print("\n\t(!) No devices found\n")
     return dev
 
 
-def get_devices():
-    s = Structure()
-    dev = s.devices()
-    return dev
-
-
-def remove_device(device):
-    s = Structure()
-    s.remove_device(device)
-    s.update_file()
-
-
-def input_files(device):
-    print('\n\t--Input Configuration--')
+def data_files(device, settings=conf.Settings()):
+    print('\n\t\t--Input Configuration--')
     finished = False
     while not finished:
-        variables = print_data(device)
-        file = input('\nName of file to extract data (press enter to exit): ')
+        variables, v_working, v_locked = print_data(device, settings=conf.Settings())
+        file = __check_answer("Name of file to extract data (press 'enter' to exit): ", option_list=[''])
         if not file:
             finished = True
         else:
+            msg = "New name of file '{}' (press 'enter' to keep name, type 'r' to remove it or 'b' to " \
+                  "go back): ".format(file)
             if file in variables.keys():
-                msg = "New name of file '%s' (press 'enter' to keep name, 'space' to remove it or type 'back' to " \
-                      "go back): " % file
-                newfile = input(msg)
-                while newfile in variables.keys():
-                    print("\n\t(!) Something went wrong: File %s already exists\n" % newfile)
-                    newfile = input(msg)
+                newfile = __check_answer(msg, out_list=variables.keys(), option_list=['', 'r', 'b'])
                 variables_in_file = variables[file].replace(' ', '').split(',')
                 new_variables = list()
+                if file in v_locked.keys():
+                    file = '.' + file
+                    newfile = '.' + newfile
             else:
-                if file[0] == ' ':
-                    print("\n\t(!) Something went wrong: Invalid input '%s'\n" % file)
-                    newfile = 'back'
+                create = __check_binary_answer("File '{}' not found, do you want to create it? (y/N): ".format(file))
+                if create == 'y':
+                    newfile = file
+                    file = None
                 else:
-                    if not variables:
-                        create = 'y'
-                    else:
-                        create = input("File '%s' not found, do you want to create it? (y/n): " % file)
-                    if create == 'y':
-                        newfile = None
-                    else:
-                        newfile = 'back'
+                    newfile = 'b'
                 variables_in_file = list()
                 new_variables = list()
-            if newfile == ' ':
-                todelete = input("File '%s' will be deleted. Are you sure? (y/n): " % file)
-                if todelete == 'y':
-                    remove_input_file(device, file)
-                newfile = 'back'
 
-            if newfile != 'back':
+            # OPTION LIST: r:remove; b:do nothing, so go back; else:make changes
+            if newfile == 'r':
+                todelete = __check_binary_answer("File '{}' will be deleted. "
+                                                 "Are you sure? (y/N): ".format(file[1:] if file[0] == '.' else file))
+                if todelete == 'y':
+                    conf.remove_input_file(settings, device, file)
+                newfile = 'b'
+
+            if newfile != 'b':
+                # edit existing variables
                 for v in variables_in_file:
-                    var = None
-                    while not var:
-                        var = input(
-                            "New name of variable '%s' (press 'enter' to keep name, or 'space' to remove it): " % v)
-                        if not var:
-                            var = v
-                        if var in new_variables:
-                            print("\n\t(!) Something went wrong: Variable '%s' already exists\n" % var)
-                            var = None
-                    if var[0] != ' ' and var[0] != '.':
+                    msg = "New name of variable '{}' (press 'enter' to keep name, or type 'r' to remove it): ".format(v)
+                    var = __check_answer(msg, out_list=new_variables, option_list=['r'], substitute_dict={'': v})
+                    if var != 'r':
                         new_variables.append(var)
-                    else:
-                        print("\n\t(!) Something went wrong: Invalid input '%s'\n" % var)
+
+                # add new variables
                 nvar = 'sthg'
                 cont = 0
                 while nvar:
                     cont += 1
-                    nvar = input("Name of new variable %i ('press' enter to exit): " % cont)
+                    msg = "Name of new variable {} ('press' enter to exit): ".format(cont)
+                    nvar = __check_answer(msg, out_list=new_variables, option_list=[''])
                     if nvar:
                         new_variables.append(nvar)
-                edit_input(device, file, new_file=newfile, new_variables=new_variables)
+                conf.edit_input(settings, device, file, new_file=newfile, new_variables=new_variables)
 
 
-def print_data(device, input_device=True):
+def print_data(device, settings=conf.Settings(), input_device=True):
     if input_device:
-        data = get_input_variables(device)
-        if data:
-            print("\nCurrent configuration of the input for device '%s':" % device)
-            print('\n{:<50} {:<3} {:<50}'.format('[FILE]', ' ', '[VARIABLES IN FILE]'))
-            for v in data.keys():
-                print('{:<50} {:<3} {:<50}'.format(v, '-->', data[v]))
+        da, wo, lo = conf.get_input_variables(settings, device)
+        print("\nCurrent configuration of the input files for device '{}':\n".format(device))
+        if da:
+            maxlenobj = 0
+            maxlencontent = 0
+            for d in da.keys():
+                maxlenobj = max(maxlenobj, len(d))
+                maxlencontent = max(maxlencontent, len(da[d]))
+            header1 = 'FILE'
+            header2 = 'INPUT VARIABLES'
+            maxlenobj = max(maxlenobj, len(header1)) + 2
+            maxlencontent = max(maxlencontent, len(header2)) + 2
+            table_format = '| {:^' + str(maxlenobj) + '}| {:^' + str(maxlencontent) + '}|'
+            sep = '+' + '-' * (maxlenobj + 1) + '+' + '-' * (maxlencontent + 1) + '+'
+            sep1 = '|{:=^' + str((maxlenobj + maxlencontent + 3)) + '}|'
+            sep2 = '+' + '=' * (maxlenobj + maxlencontent + 3) + '+'
+            print(sep)
+            print(table_format.format(header1, header2))
+            if wo:
+                print(sep2)
+                print(sep1.format(' Selected Files '))
+                print(sep2)
+                for v in wo.keys():
+                    print(table_format.format(v, wo[v]))
+            if lo:
+                print(sep2)
+                print(sep1.format(' Locked Files '))
+                print(sep2)
+                for v in lo.keys():
+                    print(table_format.format(v, lo[v]))
+            print(sep)
         else:
-            print("\n\t(!) No configuration of variables of device '%s' found\n" % device)
+            print("\n\t(!) No configuration of input files for device '{}' found\n".format(device))
 
     else:
-        data = get_output_features(device)
-        if data:
-            print("\nCurrent configuration of the output for device '%s':" % device)
-            print('\n{:<50} {:<3} {:<50}'.format('[PARSER]', ' ', '[FEATURES IN PARSER]'))
-            for v in data.keys():
-                print('{:<50} {:<3} {:<50}'.format(v, '-->', data[v]))
+        da, wo, lo = conf.get_output_features(settings, device)
+        print("\nCurrent configuration of the output for device '{}':".format(device))
+        if da:
+            maxlenobj = 0
+            maxlencontent = 0
+            for d in da.keys():
+                maxlenobj = max(maxlenobj, len(d))
+                maxlencontent = max(maxlencontent, len(da[d]))
+            header1 = 'PARSER'
+            header2 = 'OUTPUT VARIABLES'
+            maxlenobj = max(maxlenobj, len(header1)) + 2
+            maxlencontent = max(maxlencontent, len(header2)) + 2
+            table_format = '| {:^' + str(maxlenobj) + '}| {:^' + str(maxlencontent) + '}|'
+            sep = '+' + '-' * (maxlenobj + 1) + '+' + '-' * (maxlencontent + 1) + '+'
+            sep1 = '|{:=^' + str((maxlenobj + maxlencontent + 3)) + '}|'
+            sep2 = '+' + '=' * (maxlenobj + maxlencontent + 3) + '+'
+            print(sep)
+            print(table_format.format(header1, header2))
+            if wo:
+                print(sep2)
+                print(sep1.format(' Selected Parsers '))
+                print(sep2)
+                for v in wo.keys():
+                    print(table_format.format(v, wo[v]))
+            if lo:
+                print(sep2)
+                print(sep1.format(' Locked Parsers '))
+                print(sep2)
+                for v in lo.keys():
+                    print(table_format.format(v, lo[v]))
+            print(sep)
         else:
-            print("\n\t(!) No configuration of features of device '%s' found\n" % device)
-    return data
+            print("\n\t(!) No configuration of parsers for device '{}' found\n".format(device))
+    return da, wo, lo
 
 
-def get_input_variables(device):
-    s = Structure()
-    variables = s.variables(device)
-    if variables is None:
-        s.set_variables(device, None)
-    return variables
-
-
-def edit_input(device, file, new_file=None, new_variables=None):
-    s = Structure()
-    variables = s.variables(device)
-    new_variables1 = str()
-    if new_file is not None and not isinstance(new_file, str):
-        raise TypeError("Parameter 'new_file' expected to be type 'string'")
-    if new_variables:
-        if isinstance(new_variables, list) and all(isinstance(nv, str) for nv in new_variables):
-            for nv in new_variables:
-                new_variables1 += nv + ','
-            new_variables1 = new_variables1[:-1]
-        else:
-            raise TypeError("Parameter 'new_variables' expected to be type 'list of strings'")
-    s.remove_file(device, file)
-    s.set_variable(device, new_file if new_file else file, new_variables1 if new_variables else variables[file])
-    s.update_file()
-
-
-def remove_input_file(device, file):
-    s = Structure()
-    s.remove_file(device, file)
-    s.update_file()
-
-
-def remove_all_files(device):
-    s = Structure()
-    s.remove_all_files(device)
-    s.update_file()
-
-
-def parsers(device):
+def parsers(device, settings=conf.Settings()):
     finished = False
-    print('\n\t--Output Configuration--')
+    print('\n\t\t--Output Configuration--')
     while not finished:
-        features = print_data(device, input_device=False)
-        parser = input("\nName of parser to process data (press 'enter' to exit): ")
+        features, f_working, f_locked = print_data(device, settings=settings, input_device=False)
+        parser = __check_answer("\nName of parser to process data (press 'enter' to exit): ", option_list=[''],
+                                not_an_option_list=[' '])
         if not parser:
             finished = True
         else:
+            msg = "New name of parser '{}' (press 'enter' to keep name, type 'r' to remove it or 'b' " \
+                  "to go back): ".format(parser)
             if parser in features.keys():
-                msg = "New name of parser '%s' (press 'enter' to keep name, 'space' to remove it or type 'back'" \
-                      "to go back): " % parser
-                newparser = input(msg)
-                while newparser in features.keys():
-                    print("\n\t(!) Something went wrong: Parser %s already exists\n" % newparser)
-                    newparser = input(msg)
+                newparser = __check_answer(msg, out_list=features.keys(), option_list=['', 'r', 'b'],
+                                           not_an_option_list=[' '])
                 features_in_parser = features[parser].replace(' ', '').split(',')
                 new_features = list()
+                if parser in f_locked.keys():
+                    parser = '.' + parser
+                    newparser = '.' + newparser
             else:
-                if parser[0] == ' ':
-                    print("\n\t(!) Something went wrong: Invalid input %s\n" % parser)
-                    newparser = 'back'
+                msg = "Parser '{}' not found, do you want to create it? (y/N): ".format(parser)
+                create = __check_binary_answer(msg)
+                if create == 'y':
+                    newparser = None
                 else:
-                    if not features:
-                        create = 'y'
-                    else:
-                        create = input("Parser '%s' not found, do you want to create it? (y/n): " % parser)
-                    if create == 'y':
-                        newparser = None
-                    else:
-                        newparser = 'back'
+                    newparser = 'b'
                 features_in_parser = list()
                 new_features = list()
-            if newparser == ' ':
-                todelete = input("Parser '%s' will be deleted. Are you sure? (y/n): " % parser)
-                if todelete == 'y':
-                    remove_parser(device, parser)
-                newparser = 'back'
 
-            if newparser != 'back':
-                for v in features_in_parser:
-                    ftr = None
-                    while ftr is None:
-                        ftr = input(
-                            "New name of feature '%s' (press 'enter' to keep name, or 'space' to remove it): " % v)
-                        if not ftr:
-                            ftr = v
-                        if ftr in new_features:
-                            print("\n\t(!) Something went wrong: Feature '%s' already exists\n" % ftr)
-                            ftr = None
-                    if ftr[0] != ' ' or ftr[0] != '.':
+            # OPTION LIST: r:remove; b:do nothing, so go back; else:make changes
+            if newparser == 'r':
+                todelete = __check_binary_answer("Parser '{}' will be deleted. Are "
+                                                 "you sure? (y/N): ".format(parser[1:] if parser[0] == '.' else parser))
+                if todelete == 'y':
+                    conf.remove_parser(settings, device, parser)
+                newparser = 'b'
+
+            if newparser != 'b':
+                # edit existing features
+                for f in features_in_parser:
+                    msg = "New name of feature '{}' (press 'enter' to keep name, or type 'r' to remove it): ".format(f)
+                    ftr = __check_answer(msg, out_list=new_features, option_list=['r'], substitute_dict={'': f})
+                    if ftr != 'r':
                         new_features.append(ftr)
-                    else:
-                        print("\n\t(!) Something went wrong: Invalid input '%s'\n" % ftr)
+
+                # add new features
                 nftr = 'sthg'
                 cont = 0
                 while nftr:
                     cont += 1
-                    nftr = input("Name of new feature %i (press 'enter' to exit): " % cont)
+                    nftr = __check_answer("Name of new feature {} (press 'enter' to exit): ".format(cont),
+                                          out_list=new_features, option_list=[''])
                     if nftr:
                         new_features.append(nftr)
-                edit_output(device, parser, new_parser=newparser, new_features=new_features)
+                conf.edit_output(settings, device, parser, new_parser=newparser, new_features=new_features)
+    print("\nDevice '{}' successfully configured!".format(device))
 
 
-def edit_output(device, parser, new_parser=None, new_features=None):
-    s = Structure()
-    features = s.features(device)
-    s.remove_parser(device, parser)
-    new_features1 = str()
-    if new_parser is not None and not isinstance(new_parser, str):
-        raise TypeError("Parameter 'new_file' expected to be type 'string'")
-    if new_features:
-        if isinstance(new_features, list) and all(isinstance(nv, str) for nv in new_features):
-            for nv in new_features:
-                new_features1 += nv + ','
-            new_features1 = new_features1[:-1]
+def files_lockage(device=None, settings=conf.Settings()):
+    print('\n\t\t--Input Interface--')
+    dev = conf.get_devices(settings)
+    if not dev:
+        raise SystemError("(!) No device installed found: Run 'edwar.configure.devices()' to configure it")
+    if device is not None:
+        if device not in dev.keys():
+            raise ValueError("(!) Something went wrong: Device '{}' not found".format(device))
         else:
-            raise TypeError("Parameter 'new_variables' expected to be type 'list of strings'")
-    s.set_feature(device, new_parser if new_parser else parser, new_features1 if new_features else features[parser])
-    s.update_file()
+            pass
+    else:
+        print_devices(settings)
+        device = __check_answer("\nSelect device (press 'enter' to exit): ", in_list=dev.keys(), option_list=[''])
+        if not device:
+            return
+
+    while 1:
+        all_files, f_working, f_locked = print_data(device, settings, True)
+        file = __check_answer("\nSelect file to configure (press 'enter' to exit): ", in_list=all_files.keys(),
+                              option_list=[''])
+        if not file:
+            return device
+        else:
+            if file in f_working.keys():
+                a = __check_binary_answer("File '{}' will be locked, are you sure? (y/N): ".format(file))
+                if a == 'y':
+                    conf.lock_file(settings, device, file)
+            else:
+                a = __check_binary_answer("File '{}' will be unlocked, are you sure? (y/N): ".format(file))
+                if a == 'y':
+                    conf.unlock_file(settings, device, file)
 
 
-def get_output_features(device):
-    s = Structure()
-    features = s.features(device)
-    return features
+def parsers_lockage(device=None, settings=conf.Settings()):
+    print('\n\t\t--Output Interface--')
+    dev = conf.get_devices(settings)
+    if not dev:
+        raise SystemError("(!) No device installed found: Run 'edwar.configure.devices()' to configure it")
+    if device is not None:
+        if device not in dev.keys():
+            raise ValueError("(!) Something went wrong: Device '{}' not found".format(device))
+        else:
+            pass
+    else:
+        print_devices(settings)
+        device = __check_answer("\nSelect device (press 'enter' to exit): ", in_list=dev.keys(), option_list=[''])
+        if not device:
+            return
+
+    while 1:
+        all_parsers, p_working, p_locked = print_data(device, settings, False)
+        parser = __check_answer("\nSelect parser to configure (press 'enter' to exit): ", in_list=all_parsers.keys(),
+                                option_list=[''])
+        if not parser:
+            return device
+        else:
+            if parser in p_working.keys():
+                a = __check_binary_answer("Parser '{}' will be locked, are you sure? (y/N): ".format(parser))
+                if a == 'y':
+                    conf.lock_parser(settings, device, parser)
+            else:
+                a = __check_binary_answer("Parser '{}' will be unlocked, are you sure? (y/N): ".format(parser))
+                if a == 'y':
+                    conf.unlock_parser(settings, device, parser)
 
 
-def remove_parser(device, parser):
-    s = Structure()
-    s.remove_parser(device, parser)
-    s.update_file()
+def connection_database(password=None, settings=conf.Settings()):
+    print('\n\t\t--Database Server Connection--')
+    # Config data
+    config_file = os.path.join(settings.path, settings.databaseini)
+    if not os.path.exists(config_file):
+        raise FileNotFoundError("(!) Something went wrong: Configuration file '{}' not found".format(config_file))
 
+    structure_file = os.path.join(settings.path, settings.structureini)
+    if not os.path.exists(structure_file):
+        raise FileNotFoundError("(!) Something went wrong: Configuration file '{}' not found".format(structure_file))
 
-def remove_all_parsers(device):
-    s = Structure()
-    s.remove_all_parsers(device)
-    s.update_file()
-
-
-def connection():
-    print('\n\t--Database Configuration--')
-    print_connection_parameters()
-    h, p, u, pwd, db, tb = None, None, None, None, None, None
-    ans = input('\nDo you want to edit them? (y/n): ')
+    if password is None:
+        password = __check_answer("Password of your database user: ", password=True)
+    session = conf.open_session(settings, password)
+    h, p, u, pwd = print_connection_parameters(session)
+    db_name, tb_name = None, None
+    ans = __check_binary_answer('\nDo you want to edit them? (y/N): ')
     if ans == 'y':
-        h, p, u, pwd, db, tb = __ask_connection_parameters()
-    host, port, user, password, database, table = edit_connection(h, p, u, pwd, db, tb)
-    ans = input('\nDo you want to test connection with the current parameters? (y/n): ')
+        h, p, u, pwd = ask_connection_parameters()
+    host, port, user, password, database, table = conf.edit_connection_parameters(session, h, p, u, pwd, db_name,
+                                                                                  tb_name)
+    if host and port and user and password:
+        ans = __check_binary_answer('\nTest connection to database needed for database configuration.\n' +
+                                    'Do you want to do it with the current parameters? (y/N): ')
+    else:
+        ans = 'n'
     if ans == 'y':
         finished = False
         while not finished:
             try:
-                print("\n...Executing Test...")
-                conn, cursor = test_connect(host, port, user, password)
+                print("\n...Executing Connection Test...")
+                # Connection test
+                db.connect(host, port, user, password)
             except ConnectionRefusedError:
                 print("\n\t(!) Something is wrong with your user name or password\n")
-                ans = input("Do you want to edit them again? (y/n): ")
+                ans = __check_binary_answer("Do you want to reedit them? (y/N): ")
                 if ans == 'y':
-                    u = input("User name (press 'enter' to keep current name): ")
-                    pwd = input("Password (press 'enter' to keep current password): ")
-                    host, port, user, password, database, table = edit_connection(h, p, u, pwd, db, tb)
+                    u = __check_answer("User name (press 'enter' to keep current name): ")
+                    pwd = __check_answer("Password (press 'enter' to keep current password): ", password=True)
+                    host, port, user, password, database, table = conf.edit_connection_parameters(session, h, p, u, pwd,
+                                                                                                  db_name, tb_name)
                 else:
                     finished = True
             except ConnectionError:
                 print("\n\t(!) Connection went wrong\n")
-                ans = input("Do you want to edit connection parameters again? (y/n): ")
+                ans = __check_binary_answer("Do you want to reedit connection parameters? (y/N): ")
                 if ans == 'y':
-                    h, p, u, pwd, db, tb = __ask_connection_parameters()
-                    host, port, user, password, database, table = edit_connection(h, p, u, pwd, db, tb)
+                    h, p, u, pwd = ask_connection_parameters()
+                    host, port, user, password, database, table = conf.edit_connection_parameters(session, h, p, u, pwd,
+                                                                                                  db_name, tb_name)
                 else:
                     finished = True
             else:
-                print("\nTest passed!")
+                print("\nConnection test passed!")
                 finished = True
-                connect()
+                print('\n\t--Database Configuration--')
+                db_name, tb_name = print_database_parameters(session)
+                ans1 = __check_binary_answer('\nDo you want to edit them? (y/N): ')
+                if ans1 == 'y':
+                    conn, cursor = db.connect(host, port, user, password)
+                    db_selected = select_database(cursor, db_name)
+                    tb_selected = None
+                    if db_selected:
+                        tb_selected = select_table(settings, cursor, tb_name)
+
+                    conf.edit_connection_parameters(session, host=host, port=port, user=user, password=pwd,
+                                                    database=db_selected if db_selected else db_name,
+                                                    table=tb_selected if tb_selected else tb_name)
+
+                    db.disconnect(cursor, conn)
+    conf.close_session(session)
 
 
-def __ask_connection_parameters():
-    h = input("Host address (press 'enter' to keep current address): ")
-    p = input("Port number (press 'enter' to keep current number): ")
-    u = input("User name (press 'enter' to keep current name): ")
-    pwd = input("Password (press 'enter' to keep current password): ")
-    db = input("Database name (press 'enter' to keep current name): ")
-    tb = input("Table name (press 'enter' to keep current name): ")
-    return h, p, u, pwd, db, tb
+def ask_connection_parameters():
+    h = __check_answer("Host address (press 'enter' to keep current address): ")
+    p = __check_answer("Port number (press 'enter' to keep current number): ")
+    u = __check_answer("User name (press 'enter' to keep current name): ")
+    pwd = __check_answer("Password (press 'enter' to keep current password): ", password=True)
+    return h, p, u, pwd
 
 
-def edit_connection(host=None, port=None, user=None, password=None, database=None, table=None):
-    d = DataBase()
-    h, p = d.host()
-    h = host if host else h
-    p = port if port else p
-    d.set_host(h, p)
-    u, pwd = d.user()
-    u = user if user else u
-    pwd = password if password else pwd
-    d.set_user(u, pwd)
-    db = database if database else d.database()
-    d.set_database(db)
-    tb = table if table else d.table()
-    d.set_table(tb)
-    d.update_file()
-    return h, p, u, pwd, db, tb
+def print_connection_parameters(session):
+    host, port, user, password, database, table = conf.get_connection_parameters(session)
+    maxlenobj = 10
+    maxlencontent = max(len(host), len(port), len(password), len(user), 14) + 2
+    table_format = '| {:^' + str(maxlenobj) + '}| {:^' + str(maxlencontent) + '}|'
+    sep = '+' + '-' * (maxlenobj + 1) + '+' + '-' * (maxlencontent + 1) + '+'
+    print("\nCurrent database connection parameters:\n")
+    print(sep)
+    print(table_format.format('OPTION', 'VALUE'))
+    print(sep)
+    print(table_format.format('HOST', host if host else 'Not Configured'))
+    print(table_format.format('PORT', port if port else 'Not Configured'))
+    print(table_format.format('USER', user if user else 'Not Configured'))
+    print(table_format.format('PASSWORD', 'Configured' if password else 'Not Configured'))
+    print(sep)
+
+    return host, port, user, password
 
 
-def print_connection_parameters():
-    host, port, user, password, database, table = edit_connection()
-    print("\nCurrent configuration of the connection to database")
-    print('\n{:<50} {:<3} {:<50}'.format('[OPTION]', ' ', '[VALUE]'))
-    print('{:<50} {:<3} {:<50}'.format('HOST', '-->', host if host else 'Not Configured'))
-    print('{:<50} {:<3} {:<50}'.format('PORT', '-->', port if port else 'Not Configured'))
-    print('{:<50} {:<3} {:<50}'.format('USER', '-->', user if user else 'Not Configured'))
-    print('{:<50} {:<3} {:<50}'.format('PASSWORD', '-->', password if password else 'Not Configured'))
-    print('{:<50} {:<3} {:<50}'.format('DATABASE', '-->', database if database else 'Not Configured'))
-    print('{:<50} {:<3} {:<50}'.format('TABLE', '-->', table if table else 'Not Configured'))
-    return host, port, user, password, database, table
+def print_database_parameters(session):
+    host, port, user, password, database, table = conf.get_connection_parameters(session)
+    maxlenobj = 10
+    maxlencontent = max(len(database), len(table), 14) + 2
+    table_format = '| {:^' + str(maxlenobj) + '}| {:^' + str(maxlencontent) + '}|'
+    sep = '+' + '-' * (maxlenobj + 1) + '+' + '-' * (maxlencontent + 1) + '+'
+    print("\nCurrent database configuration:\n")
+    print(sep)
+    print(table_format.format('OPTION', 'VALUE'))
+    print(sep)
+    print(table_format.format('DATABASE', database if database else 'Not Configured'))
+    print(table_format.format('TABLE', table if table else 'Not Configured'))
+    print(sep)
+
+    return database, table
+
+
+def select_database(cursor, db_name=None):
+    db_selected = None
+    while not db_selected:
+        if db_name:
+            msg = "Database name (press 'enter' to keep current name '{}'): ".format(db_name)
+            substitute_dict = {'': db_name}
+            option_list = []
+        else:
+            msg = "Database name (press 'enter' to exit): "
+            substitute_dict = {}
+            option_list = ['']
+        db_name = __check_answer(msg, substitute_dict=substitute_dict, option_list=option_list)
+
+        if db_name:
+            try:
+                cursor.execute("USE {}".format(db_name))
+            except sql.errors.Error as err2:
+                print("\n\t(!) Something went wrong while selecting database '{}': {}\n".format(db_name, err2))
+                a = __check_binary_answer('Do you want to create it? (y/N): ')
+                if a == 'y':
+                    try:
+                        cursor.execute("CREATE DATABASE IF NOT EXISTS {}".format(db_name))
+                    except sql.errors.Error as err:
+                        if err.errno == sql.errorcode.ER_DBACCESS_DENIED_ERROR:
+                            print("\n\t(!) Permission denied to create database\n")
+                        else:
+                            print("\n\t(!) Something went wrong while creating database '{}': {}\n".format(db_name,
+                                                                                                           err))
+                        db_name = None
+                    except Exception as err1:
+                        print("\n\t(!) Something went wrong while selecting database: {}\n".format(err1))
+                        db_name = None
+                    else:
+                        db_selected = db_name
+                        print("Database '{}' successfully created to upload data".format(db_name))
+                else:
+                    db_name = None
+            else:
+                print("Database '{}' successfully selected to upload data".format(db_name))
+                db_selected = db_name
+        else:
+            return None
+    return db_selected
+
+
+def create_table(settings, cursor, tb=None):
+    default_features = ('EDA', 'ACCx', 'ACCy', 'ACCz', 'IBI', 'TEMP')
+    tb_name = __check_answer("Name of the new table (press 'enter' to keep current name '{}'): ".format(tb),
+                             substitute_dict={'': tb})
+
+    print('Default features are {}'.format(default_features))
+    if_new_features = __check_binary_answer("Do you want to use other features? (if yes, features declared for a given "
+                                            + "configuration's device will be used) (y/N): ")
+    if if_new_features == 'y':
+        devs = print_devices(settings)
+        if not devs:
+            ans = __check_binary_answer("Only default features {} can be used. ".format(default_features) +
+                                        "Do you want to create table '{}' anyway? (y/N): ".format(tb_name))
+            if ans == 'y':
+                features = default_features
+            else:
+                return None
+        else:
+            device = __check_answer("From which device configuration do you want to extract the features? (press "
+                                    "'enter' to exit): ", in_list=devs.keys(), option_list=[''])
+            if not device:
+                return None
+            out_modules, wo, lo = conf.get_output_features(settings, device)
+            features = tuple()
+            for feature in out_modules.values():
+                features += tuple(feature.replace(' ', '').split(','))
+    else:
+        features = default_features
+
+    try:
+        cursor.execute('''CREATE TABLE {} (
+                       `data_type` enum{} CHARACTER SET latin1 COLLATE latin1_spanish_ci NOT NULL,
+                       `ts` datetime NOT NULL,
+                       `value` float NOT NULL,
+                       PRIMARY KEY (`data_type`, `ts`)) 
+                       ENGINE=InnoDB DEFAULT CHARSET=latin1;'''.format(tb_name, features))
+        print("Table '{}' created".format(tb_name))
+    except sql.errors.Error as err:
+        print("\n\t(!) Something went wrong while creating table '{}': {}\n".format(tb_name, err))
+        return None
+    return tb_name
+
+
+def select_table(settings, cursor, tb_name=None):
+    tb_selected = None
+    header_needed = ('data_type', 'ts', 'value')
+    while not tb_selected:
+        print('\nTable header should contain a header with {}. If not, a custom function is '.format(header_needed) +
+              'required to adapt data to the given database table')
+        if tb_name:
+            msg = "Table name (press 'enter' to keep current name '{}'): ".format(tb_name)
+            substitute_dict = {'': tb_name}
+            option_list = []
+        else:
+            msg = "Table name (press 'enter' to exit): "
+            substitute_dict = {}
+            option_list = ['']
+        tb_name = __check_answer(msg, substitute_dict=substitute_dict, option_list=option_list)
+        if tb_name:
+            try:
+                cursor.execute("SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE table_name=%s;", (tb_name,))
+                if cursor.fetchone() is None:
+                    print("\n\t(!) Something went wrong while trying to select table '{}': ".format(tb_name) +
+                          "Table not found\n")
+                    a = __check_binary_answer('Do you want to create a new one? (y/N): ')
+                    if a == 'y':
+                        tb_selected = create_table(settings, cursor, tb_name)
+                else:
+                    tb_selected = tb_name
+            except sql.errors.Error as err:
+                print("\n\t(!) Something went wrong while trying to select table '{}': {}\n".format(tb_name, err))
+                a = __check_binary_answer('Do you want to create a new one? (y/N): ')
+                if a == 'y':
+                    tb_selected = create_table(settings, cursor, tb_name)
+            tb_name = None
+        else:
+            return None
+    print("Table '{}' successfully selected to upload data".format(tb_selected))
+    return tb_selected
