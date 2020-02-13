@@ -2,37 +2,17 @@ from abc import ABC, abstractmethod
 import pandas as pd
 import functools
 
+from .ibi import check_ibi
+
 
 class Parser(ABC):
 
-    def __init__(self, inputs, outputs, optional_inputs=None, optional_outputs=None):
+    def __init__(self, inputs: dict, outputs: dict, optional_inputs: dict = None, optional_outputs: dict = None):
 
-        if type(inputs) is dict:
-            self.inputs = inputs
-        else:
-            raise TypeError("(!) Parser arguments 'inputs' must be dictionary")
-
-        if type(outputs) is dict:
-            self.outputs = outputs
-        else:
-            raise TypeError("(!) Parser arguments 'outputs' must be dictionary")
-
-        if optional_inputs:
-            if type(optional_inputs) is dict:
-                self.optional_inputs = optional_inputs
-            else:
-                raise TypeError("(!) Parser arguments 'optional_inputs' must be dictionary")
-        else:
-            self.optional_inputs = dict()
-
-        if optional_outputs:
-            if type(optional_outputs) is dict:
-                self.optional_outputs = optional_outputs
-            else:
-                raise TypeError("(!) Parser arguments 'optional_inputs' must be dictionary")
-        else:
-            self.optional_outputs = dict()
-
+        self.inputs = inputs
+        self.outputs = outputs
+        self.optional_inputs = optional_inputs if optional_inputs else dict()
+        self.optional_outputs = optional_outputs if optional_outputs else dict()
         super().__init__()
 
     @staticmethod
@@ -43,9 +23,9 @@ class Parser(ABC):
         for d in data:
             inputs += list(d.columns)
         if [i for i in inputs if i in expected] != expected:
-            raise ValueError('(!) {} expected input is {}, but got {}'.format(name, expected, inputs))
+            raise ValueError('{} expected input is {}, but got {}'.format(name, expected, inputs))
         elif [i for i in inputs if i in plus] != plus:
-            raise UserWarning('(!) {} expected input is {}, but got {}: Parser will work only partially'.
+            raise UserWarning('{} expected input is {}, but got {}: Parser will work only partially'.
                               format(name, expected + plus, inputs))
 
     @staticmethod
@@ -86,7 +66,7 @@ class IBIparser(Parser):
 
     def run(self, data):
         self.check_input(self.__class__.__name__, data, self.inputs, self.optional_inputs)
-        out = self.adapt_input(data)
+        out = check_ibi(self.adapt_input(data))
         return out
 
 

@@ -1,10 +1,20 @@
-import configparser
 import os
 import io
 import base64
 import hashlib
+import logging
+import configparser
 from Crypto import Random
 from Crypto.Cipher import AES
+
+from ..errors import *
+
+
+class Settings:
+    def __init__(self, path=None, databaseini=None, structureini=None):
+        self.path = path if path else '.cfg_edwar'
+        self.databaseini = databaseini if databaseini else 'database.ini'
+        self.structureini = structureini if structureini else 'structure.ini'
 
 
 class Structure:
@@ -13,9 +23,10 @@ class Structure:
         self.parser.optionxform = str
         self.structurefile = os.path.join(settings.path, settings.structureini)
         ok = self.parser.read(self.structurefile)
+        self.log = logging.getLogger('EDWAR')
         if not ok:
-            raise FileNotFoundError("Configuration file {} found. ".format(settings.structureini) +
-                                    "Run edwar.configure.devices() to create it")
+            self.log.critical("No structure description file '{}' found.".format(settings.structureini))
+            raise StructureFileNotFoundError(settings.structureini)
         try:
             self._devices = dict(self.parser.items(section='DEVICES'))
         except configparser.NoSectionError:
@@ -43,7 +54,8 @@ class Structure:
     def check_device(self, device):
         if device in self.devices().keys():
             return 1
-        raise KeyError("No device %s found" % device)
+        self.log.critical("No device '{}' configured found.".format(device))
+        raise DeviceNotFoundError(device)
 
     def variables(self, device):
         v = dict()
@@ -78,12 +90,15 @@ class Structure:
 
     def lock_file(self, device, file):
         if self.check_device(device):
+            newfile = '.' + file
             if file in self.variables(device).keys():
-                newfile = '.' + file
                 self.parser['VARIABLES ' + device.upper()][newfile] = self.parser['VARIABLES ' + device.upper()].pop(
                     file)
+                self.log.info("File '{}' locked.".format(file))
+            elif newfile in self.variables(device).keys():
+                self.log.info("File '{}' was already locked.".format(file))
             else:
-                raise KeyError("No unlocked file %s found for device %s" % (file, device))
+                self.log.warning("No file '{}' found for device {}.".format(file, device))
 
     def unlock_file(self, device, file):
         lockfile = '.' + file
@@ -91,8 +106,11 @@ class Structure:
             if lockfile in self.variables(device).keys():
                 self.parser['VARIABLES ' + device.upper()][file] = self.parser['VARIABLES ' + device.upper()].pop(
                     lockfile)
+                self.log.info("File '{}' unlocked.".format(file))
+            elif file in self.variables(device).keys():
+                self.log.info("File '{}' was already unlocked.".format(file))
             else:
-                raise KeyError("No locked file %s found for device %s" % (file, device))
+                self.log.warning("No {} data file '{}' found.".format(device, file))
 
     def features(self, device):
         f = dict()
@@ -125,26 +143,30 @@ class Structure:
             except configparser.NoSectionError:
                 pass
 
-    def lock_module(self, device, module):  # TODO: change raise error to warning log
+    def lock_module(self, device, module):
         features_section = 'FEATURES ' + device.upper()
         if self.check_device(device):
+            newmodule = '.' + module
             if module in self.features(device).keys():
-                newfile = '.' + module
-                self.parser[features_section][newfile] = self.parser[features_section].pop(
+                self.parser[features_section][newmodule] = self.parser[features_section].pop(
                     module)
+                self.log.info("Parser '{}' locked.")
+            elif newmodule in self.features(device).keys():
+                self.log.info("Parser '{}' was already locked.")
             else:
-                msg = "No unlocked module %s found for device %s" % (module, device)
-                raise KeyError(msg)
+                self.log.warning("No {} data parser '{}' found.".format(device, module))
 
-    def unlock_module(self, device, module):  # TODO: same as upper
+    def unlock_module(self, device, module):
         features_section = 'FEATURES ' + device.upper()
         lockmodule = '.' + module
         if self.check_device(device):
             if lockmodule in self.features(device).keys():
                 self.parser[features_section][module] = self.parser[features_section].pop(lockmodule)
+                self.log.info("Parser '{}' unlocked.")
+            elif lockmodule in self.features(device).keys():
+                self.log.info("Parser '{}' was already unlocked.")
             else:
-                msg = "No locked module %s found for device %s" % (module, device)
-                raise KeyError(msg)
+                self.log.warning("No {} data parser '{}' found.".format(device, module))
 
     def update_file(self):
         with open(self.structurefile, 'w') as confFile:
@@ -157,20 +179,23 @@ class DataBase:
         self.parser.optionxform = str
         self.databasefile = os.path.join(settings.path, settings.databaseini)
         self.password = self.complete_password(password)
-
-        with open(self.databasefile, 'r') as confFile:
-            ciphertext = confFile.read()
+        self.log = logging.getLogger('EDWAR')
 
         try:
+            with open(self.databasefile, 'r') as confFile:
+                ciphertext = confFile.read()
             text = AESCipher(self.password).decrypt(ciphertext)
+        except FileNotFoundError:
+            self.log.critical("No database configuration file '{}' found.".format(settings.databaseini))
+            raise DatabaseFileNotFoundError(settings.databaseini)
         except UnicodeDecodeError:
-            raise KeyError('Wrong password. Unable to read {}'.format(settings.databaseini))
+            raise PasswordError(settings.databaseini)
         self.parser.read_string(text)
 
         try:
             self._db = dict(self.parser.items(section='DB'))
         except configparser.NoSectionError:
-            raise KeyError('Incorrect syntax of {} file. Decryption must be wrong.'.format(settings.databaseini))
+            raise PasswordError(settings.databaseini)
 
     def host(self):
         try:
@@ -234,9 +259,7 @@ class DataBase:
         confFile.close()
 
     @staticmethod
-    def complete_password(pwd):
-        if not isinstance(pwd, str):
-            raise TypeError('Password must be a string with between 8 and 16 characters')
+    def complete_password(pwd: str):
         default = '0123456789abcdef'
         filled = len(pwd) if len(pwd) <= 16 else 16
         full_password = pwd[0:15] + default[0:16-filled]

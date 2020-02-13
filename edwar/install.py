@@ -19,7 +19,6 @@ objtemp = TEMP
 
 [FEATURES EVERION]
 EDAparser = EDA, SCL, SCR
-ACCparser = ACCx, ACCy, ACCz
 IBIparser = IBI
 TEMPparser = TEMP
 
@@ -51,12 +50,12 @@ def __user_identification():
     return user, pwd
 
 
-def all_cfgs(settings=configure.conf.Settings(), default=True):
+def all_cfgs(settings=configure.Settings(), default=True):
     structure_cfg(settings=settings, default=default)
     database_cfg(settings=settings)
 
 
-def structure_cfg(settings=configure.conf.Settings(), default=True):
+def structure_cfg(settings=configure.Settings(), default=True):
     path = settings.path
     if not os.path.exists(path):
         print("Configuration directory {} not found. New {} created".format(path, path))
@@ -74,7 +73,7 @@ def structure_cfg(settings=configure.conf.Settings(), default=True):
     configure.devices(settings)
     
 
-def database_cfg(settings=configure.conf.Settings()):
+def database_cfg(settings=configure.Settings()):
     path = settings.path
     if not os.path.exists(path):
         print("Configuration directory {} not found. New {} created".format(path, path))

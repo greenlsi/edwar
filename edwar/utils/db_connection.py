@@ -16,12 +16,12 @@ def connect(host, port, user, pwd):
         if conn.is_connected():
             cursor = conn.cursor()
         else:
-            raise ConnectionError("(!) Connection went wrong: cursor could not be created")
+            raise ConnectionError
     except sql.errors.Error as err:
         if err.errno == sql.errorcode.ER_ACCESS_DENIED_ERROR:
-            raise ConnectionRefusedError("(!) Something is wrong with your user name or password")
+            raise ConnectionRefusedError
         else:
-            raise ConnectionError("(!) Connection went wrong: {}".format(err))
+            raise ConnectionError
     else:
         return conn, cursor
 
@@ -42,5 +42,4 @@ def disconnect(cursor, conn):
             conn.close()
         return 0
     except sql.Error as err:
-        print('Connection could not be closed: {}'.format(err))
-    return 1
+        raise ConnectionError('Connection could not be closed: {}.'.format(err))

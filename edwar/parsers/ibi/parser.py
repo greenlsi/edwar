@@ -1,3 +1,9 @@
+"""
+                                    CODE BASED IN
+                    'ARTEFACT CORRECTION FOR HEART BEAT INTERVAL DATA'
+                    By Saalasti Sami, Seppänen Mikko and Kuusela Antti
+"""
+
 import pandas as pd
 import numpy as np
 # import warnings
@@ -5,13 +11,8 @@ import matplotlib.pyplot as plt
 import datetime
 from scipy.stats import norm
 
+from .variables import *
 from ..utils import get_diff_seconds
-
-# VARIABLES
-max_hr = 220  # Haskell & Fox based
-min_hr = 40  # U.S. Department of Health and Human Services - National Ites of Health // Bradycardia record limit
-window_error_detection = 4  # seconds
-max_correction_time = 60  # seconds
 
 
 def __tacogram(ibi):
@@ -31,21 +32,19 @@ def __tacogram(ibi):
 
 
 def _error_detection(ibi):
-    max_ibi = 60 / min_hr
-    min_ibi = 60 / max_hr
     max_diff_ibi = 0.2  # maximum ibi gradient value in seconds
     ibi['ERROR'] = np.zeros(len(ibi['IBI']))
     ibi['CORRECTED'] = np.zeros(len(ibi['IBI']))
     ibi['DIFF'] = np.concatenate((np.diff(np.array(ibi['IBI']).flatten()), [0]))
 
     for i in range(0, len(ibi)-1):
-        if ibi['IBI'][i] > max_ibi or ibi['IBI'][i] < min_ibi:  # method 1: hard limits
+        if ibi['IBI'][i] > MAX_IBI or ibi['IBI'][i] < MIN_IBI:  # method 1: hard limits
             ibi['ERROR'][i] = 1
 
         elif abs(ibi['DIFF'][i]) > max_diff_ibi:                # method 2: gradient limit
             ibi['ERROR'][i + 1] = 1                             # if reference is valid, apply method 2 to next sample
 
-    if ibi['IBI'][-1] > max_ibi or ibi['IBI'][-1] < min_ibi:    # method 1: only value left to check
+    if ibi['IBI'][-1] > MAX_IBI or ibi['IBI'][-1] < MIN_IBI:    # method 1: only value left to check
         ibi['ERROR'][-1] = 1
 
     return ibi
@@ -54,7 +53,7 @@ def _error_detection(ibi):
 def __wide_correction(ibi_pre2, ibi_pre1, ibi_e, ibi_pos1, ibi_pos2):  # buffer of 4 samples
     ibi_c = pd.DataFrame()  # new IBIs corrected
     ibi_d = pd.DataFrame()  # IBIs to be deleted
-    if ibi_e['IBI'] > max_correction_time:
+    if ibi_e['IBI'] > MAX_CORRECTION_TIME:
         pass
         # print('(!) IBI is interrupted at {} {} seconds (max {}), so correction is not possible'.format(
         #       ibi_e.index, round(ibi_e, 2), max_correction_time))  # TODO: log warning

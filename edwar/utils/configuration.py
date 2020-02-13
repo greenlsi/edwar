@@ -1,24 +1,13 @@
 from .rw_ini import Structure, DataBase
 
 
-class Settings:
-    def __init__(self, path=None, databaseini=None, structureini=None):
-        self.path = path if path else '.cfg_edwar'
-        self.databaseini = databaseini if databaseini else 'database.ini'
-        self.structureini = structureini if structureini else 'structure.ini'
-
-
-def edit_device(settings, device, new_device=None, new_loader=None):
+def edit_device(settings, device: str, new_device: str = None, new_loader: str = None):
     s = Structure(settings)
     dev = s.devices()
     try:
         loader = dev[device]
     except KeyError:
         loader = None
-    if new_device and not isinstance(new_device, str):
-        raise TypeError("Parameter 'new_device' expected to be type 'string'")
-    if new_loader and not isinstance(new_loader, str):
-        raise TypeError("Parameter 'new_loader' expected to be type 'string'")
     try:
         variables = s.variables(device)
         features = s.features(device)
@@ -38,25 +27,20 @@ def get_devices(settings):
     return dev
 
 
-def remove_device(settings, device):
+def remove_device(settings, device: str):
     s = Structure(settings)
     s.remove_device(device)
     s.update_file()
 
 
-def edit_input(settings, device, file, new_file=None, new_variables=None):
+def edit_input(settings, device: str, file: str, new_file: str = None, new_variables: list = None):
     s = Structure(settings)
     variables = s.variables(device)
     new_variables1 = str()
-    if new_file is not None and not isinstance(new_file, str):
-        raise TypeError("Parameter 'new_file' expected to be type 'string'")
     if new_variables:
-        if isinstance(new_variables, list) and all(isinstance(nv, str) for nv in new_variables):
-            for nv in new_variables:
-                new_variables1 += nv + ','
-            new_variables1 = new_variables1[:-1]
-        else:
-            raise TypeError("Parameter 'new_variables' expected to be type 'list of strings'")
+        for nv in new_variables:
+            new_variables1 += nv + ','
+        new_variables1 = new_variables1[:-1]
     if file:
         s.remove_file(device, file)
     s.set_variable(device, new_file if new_file else file, new_variables1 if new_variables else variables[file])
@@ -132,20 +116,15 @@ def get_output_features(settings, device):
     return features1, working, locked
 
 
-def edit_output(settings, device, parser, new_parser=None, new_features=None):
+def edit_output(settings, device: str, parser: str, new_parser: str = None, new_features: list = None):
     s = Structure(settings)
     features = s.features(device)
     s.remove_parser(device, parser)
     new_features1 = str()
-    if new_parser is not None and not isinstance(new_parser, str):
-        raise TypeError("Parameter 'new_file' expected to be type 'string'")
     if new_features:
-        if isinstance(new_features, list) and all(isinstance(nv, str) for nv in new_features):
-            for nv in new_features:
-                new_features1 += nv + ','
-            new_features1 = new_features1[:-1]
-        else:
-            raise TypeError("Parameter 'new_variables' expected to be type 'list of strings'")
+        for nv in new_features:
+            new_features1 += nv + ','
+        new_features1 = new_features1[:-1]
     s.set_feature(device, new_parser if new_parser else parser, new_features1 if new_features else features[parser])
     s.update_file()
 
@@ -217,3 +196,7 @@ def open_session(settings, pw=''):
 
 def close_session(session):
     session.update_file()
+
+
+def check_password(settings, pw):
+    close_session(open_session(settings, pw))
