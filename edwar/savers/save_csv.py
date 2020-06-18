@@ -7,4 +7,4 @@ def save_in_csv(path, my_file, my_data):
     except IOError:
         raise IOError("Path {} not Found".format(path))
     except Exception:
-        raise Exception("Error while writing in {}".format(my_file))
+        raise Exception("Error while writing in {}".format(os.path.join(path, my_file)))

@@ -66,7 +66,7 @@ def _load_ibi_file(directory, file, list_of_columns):
     try:
         # Get the startTime and sample rate
         start_time = float(ibi.columns.values[0])
-        list_index = list(pd.to_datetime(start_time + ibi.iloc[:, 0] - ibi.iloc[:, 1], unit='s'))
+        list_index = pd.to_datetime((start_time + ibi.iloc[:, 0] - ibi.iloc[:, 1])*1000, unit='ms')
         ibi = pd.DataFrame(ibi.iloc[:, 1])
         ibi.columns = list_of_columns
         ibi.index = list_index
@@ -91,7 +91,7 @@ def load_files(dirpath, variables):
             v = _load_ibi_file(dirpath, file + '.csv', variables[file].replace(' ', '').split(','))
         else:
             v = _load_single_file(dirpath, file + '.csv', variables[file].replace(' ', '').split(','))
-            if 'ACC' in file:
+            if 'ACC' in file and v is not None:
                 v[:] = v[:]/64.0
         if v is not None:
             data.append(v)

@@ -7,7 +7,6 @@ from .utils import Settings
 from .utils.user_input import check_binary_answer, check_answer
 from .loaders.loader import __enum__
 
-
 __all__ = {
     'settings_location',
     'devices',
@@ -38,7 +37,7 @@ def devices(settings=Settings()):
                 load_function = dev[device]
             else:
                 create = check_binary_answer("Device '{}' not found, ".format(device) +
-                                               "do you want to create it? (y/N): ")
+                                             "do you want to create it? (y/N): ")
                 if create == 'y':
                     newdevice = device
                 else:
@@ -58,14 +57,14 @@ def devices(settings=Settings()):
                     if loaders:
                         for p in loaders:
                             print('\t-{}'.format(p))
-                        msg = "New function loader (press 'enter' to keep the current loader '{}'): ".\
+                        msg = "New function loader (press 'enter' to keep the current loader '{}'): ". \
                             format(load_function)
-                        msg1 = "If your loader is not listed, leave 'None' as value of current loader"
+                        msg1 = "If your loader is not listed, leave 'None' as value of current loader."
                         new_load_function = check_answer(msg, in_list=loaders, option_list=[''],
                                                          extra_info_not_found=msg1)
 
                     else:
-                        print("\n\t(!) No loaders found\n")
+                        print("\n\t(!) No loaders found.\n")
                         new_load_function = None
 
                 conf.edit_device(settings, device, new_device=newdevice, new_loader=new_load_function)
@@ -95,7 +94,7 @@ def print_devices(settings=Settings()):
             print(table_format.format(v, dev[v]))
         print(sep)
     else:
-        print("\n\t(!) No devices found\n")
+        print("\n\t(!) No devices found.\n")
     return dev
 
 
@@ -130,7 +129,7 @@ def data_files(device, settings=Settings()):
             # OPTION LIST: r:remove; b:do nothing, so go back; else:make changes
             if newfile == 'r':
                 todelete = check_binary_answer("File '{}' will be deleted. "
-                                                 "Are you sure? (y/N): ".format(file[1:] if file[0] == '.' else file))
+                                               "Are you sure? (y/N): ".format(file[1:] if file[0] == '.' else file))
                 if todelete == 'y':
                     conf.remove_input_file(settings, device, file)
                 newfile = 'b'
@@ -148,7 +147,7 @@ def data_files(device, settings=Settings()):
                 cont = 0
                 while nvar:
                     cont += 1
-                    msg = "Name of new variable {} ('press' enter to exit): ".format(cont)
+                    msg = "Name of new variable {} (press 'enter' to exit): ".format(cont)
                     nvar = check_answer(msg, out_list=new_variables, option_list=[''])
                     if nvar:
                         new_variables.append(nvar)
@@ -189,7 +188,7 @@ def print_data(device, settings=Settings(), input_device=True):
                     print(table_format.format(v, lo[v]))
             print(sep)
         else:
-            print("\n\t(!) No configuration of input files for device '{}' found\n".format(device))
+            print("\n\t(!) No configuration of input files for device '{}' found.\n".format(device))
 
     else:
         da, wo, lo = conf.get_output_features(settings, device)
@@ -224,7 +223,7 @@ def print_data(device, settings=Settings(), input_device=True):
                     print(table_format.format(v, lo[v]))
             print(sep)
         else:
-            print("\n\t(!) No configuration of parsers for device '{}' found\n".format(device))
+            print("\n\t(!) No configuration of parsers for device '{}' found.\n".format(device))
     return da, wo, lo
 
 
@@ -261,7 +260,7 @@ def parsers(device, settings=Settings()):
             # OPTION LIST: r:remove; b:do nothing, so go back; else:make changes
             if newparser == 'r':
                 todelete = check_binary_answer("Parser '{}' will be deleted. Are "
-                                                 "you sure? (y/N): ".format(parser[1:] if parser[0] == '.' else parser))
+                                               "you sure? (y/N): ".format(parser[1:] if parser[0] == '.' else parser))
                 if todelete == 'y':
                     conf.remove_parser(settings, device, parser)
                 newparser = 'b'
@@ -291,10 +290,10 @@ def files_lockage(device=None, settings=Settings()):
     print('\n\t\t--Input Interface--')
     dev = conf.get_devices(settings)
     if not dev:
-        raise SystemError("(!) No device installed found: Run 'edwar.configure.devices()' to configure it")
+        raise SystemError("(!) No device installed found: Run 'edwar.configure.devices()' to configure it.")
     if device is not None:
         if device not in dev.keys():
-            raise ValueError("(!) Something went wrong: Device '{}' not found".format(device))
+            raise ValueError("(!) Something went wrong: Device '{}' not found.".format(device))
         else:
             pass
     else:
@@ -324,10 +323,10 @@ def parsers_lockage(device=None, settings=Settings()):
     print('\n\t\t--Output Interface--')
     dev = conf.get_devices(settings)
     if not dev:
-        raise SystemError("(!) No device installed found: Run 'edwar.configure.devices()' to configure it")
+        raise SystemError("(!) No device installed found: Run 'edwar.configure.devices()' to configure it.")
     if device is not None:
         if device not in dev.keys():
-            raise ValueError("(!) Something went wrong: Device '{}' not found".format(device))
+            raise ValueError("(!) Something went wrong: Device '{}' not found.".format(device))
         else:
             pass
     else:
@@ -358,11 +357,11 @@ def connection_database(password=None, settings=Settings()):
     # Config data
     config_file = os.path.join(settings.path, settings.databaseini)
     if not os.path.exists(config_file):
-        raise FileNotFoundError("(!) Something went wrong: Configuration file '{}' not found".format(config_file))
+        raise FileNotFoundError("(!) Something went wrong: Configuration file '{}' not found.".format(config_file))
 
     structure_file = os.path.join(settings.path, settings.structureini)
     if not os.path.exists(structure_file):
-        raise FileNotFoundError("(!) Something went wrong: Configuration file '{}' not found".format(structure_file))
+        raise FileNotFoundError("(!) Something went wrong: Configuration file '{}' not found.".format(structure_file))
 
     if password is None:
         password = check_answer("Password of your database user: ", password=True)
@@ -376,7 +375,7 @@ def connection_database(password=None, settings=Settings()):
                                                                                   tb_name)
     if host and port and user and password:
         ans = check_binary_answer('\nTest connection to database needed for database configuration.\n' +
-                                    'Do you want to do it with the current parameters? (y/N): ')
+                                  'Do you want to do it with the current parameters? (y/N): ')
     else:
         ans = 'n'
     if ans == 'y':
@@ -387,7 +386,7 @@ def connection_database(password=None, settings=Settings()):
                 # Connection test
                 db.connect(host, port, user, password)
             except ConnectionRefusedError:
-                print("\n\t(!) Something is wrong with your user name or password\n")
+                print("\n\t(!) Something is wrong with your user name or password.\n")
                 ans = check_binary_answer("Do you want to reedit them? (y/N): ")
                 if ans == 'y':
                     u = check_answer("User name (press 'enter' to keep current name): ")
@@ -397,7 +396,7 @@ def connection_database(password=None, settings=Settings()):
                 else:
                     finished = True
             except ConnectionError:
-                print("\n\t(!) Connection went wrong\n")
+                print("\n\t(!) Connection went wrong.\n")
                 ans = check_binary_answer("Do you want to reedit connection parameters? (y/N): ")
                 if ans == 'y':
                     h, p, u, pwd = ask_connection_parameters()
@@ -487,28 +486,28 @@ def select_database(cursor, db_name=None):
             try:
                 cursor.execute("USE {}".format(db_name))
             except sql.errors.Error as err2:
-                print("\n\t(!) Something went wrong while selecting database '{}': {}\n".format(db_name, err2))
+                print("\n\t(!) Something went wrong while selecting database '{}': {}.\n".format(db_name, err2))
                 a = check_binary_answer('Do you want to create it? (y/N): ')
                 if a == 'y':
                     try:
                         cursor.execute("CREATE DATABASE IF NOT EXISTS {}".format(db_name))
                     except sql.errors.Error as err:
                         if err.errno == sql.errorcode.ER_DBACCESS_DENIED_ERROR:
-                            print("\n\t(!) Permission denied to create database\n")
+                            print("\n\t(!) Permission denied to create database.\n")
                         else:
-                            print("\n\t(!) Something went wrong while creating database '{}': {}\n".format(db_name,
-                                                                                                           err))
+                            print("\n\t(!) Something went wrong while creating database '{}': {}.\n".format(db_name,
+                                                                                                            err))
                         db_name = None
                     except Exception as err1:
-                        print("\n\t(!) Something went wrong while selecting database: {}\n".format(err1))
+                        print("\n\t(!) Something went wrong while selecting database: {}.\n".format(err1))
                         db_name = None
                     else:
                         db_selected = db_name
-                        print("Database '{}' successfully created to upload data".format(db_name))
+                        print("Database '{}' successfully created to upload data.".format(db_name))
                 else:
                     db_name = None
             else:
-                print("Database '{}' successfully selected to upload data".format(db_name))
+                print("Database '{}' successfully selected to upload data.".format(db_name))
                 db_selected = db_name
         else:
             return None
@@ -527,7 +526,7 @@ def create_table(settings, cursor, tb=None):
         devs = print_devices(settings)
         if not devs:
             ans = check_binary_answer("Only default features {} can be used. ".format(default_features) +
-                                        "Do you want to create table '{}' anyway? (y/N): ".format(tb_name))
+                                      "Do you want to create table '{}' anyway? (y/N): ".format(tb_name))
             if ans == 'y':
                 features = default_features
             else:
@@ -551,9 +550,9 @@ def create_table(settings, cursor, tb=None):
                        `value` float NOT NULL,
                        PRIMARY KEY (`data_type`, `ts`)) 
                        ENGINE=InnoDB DEFAULT CHARSET=latin1;'''.format(tb_name, features))
-        print("Table '{}' created".format(tb_name))
+        print("Table '{}' created.".format(tb_name))
     except sql.errors.Error as err:
-        print("\n\t(!) Something went wrong while creating table '{}': {}\n".format(tb_name, err))
+        print("\n\t(!) Something went wrong while creating table '{}': {}.\n".format(tb_name, err))
         return None
     return tb_name
 
@@ -563,7 +562,7 @@ def select_table(settings, cursor, tb_name=None):
     header_needed = ('data_type', 'ts', 'value')
     while not tb_selected:
         print('\nTable header should contain a header with {}. If not, a custom function is '.format(header_needed) +
-              'required to adapt data to the given database table')
+              'required to adapt data to the given database table.')
         if tb_name:
             msg = "Table name (press 'enter' to keep current name '{}'): ".format(tb_name)
             substitute_dict = {'': tb_name}
@@ -592,5 +591,5 @@ def select_table(settings, cursor, tb_name=None):
             tb_name = None
         else:
             return None
-    print("Table '{}' successfully selected to upload data".format(tb_selected))
+    print("Table '{}' successfully selected to upload data.".format(tb_selected))
     return tb_selected

@@ -2,7 +2,13 @@ import os
 import logging
 
 
-def setup_logger(logger_name, log_directory='.TMP', level=logging.DEBUG):
+def setup_logger(logger_name, log_directory, level=logging.DEBUG):
+    """
+    :param logger_name:
+    :param log_directory:
+    :param level:
+    :return:
+    """
     log = logging.getLogger(logger_name)
     formatter_file = logging.Formatter('%(levelname)s : %(asctime)s : %(message)s')
     formatter_stream = logging.Formatter('%(name)s : %(levelname)s : %(message)s')

@@ -11,10 +11,11 @@ from ..errors import *
 
 
 class Settings:
-    def __init__(self, path=None, databaseini=None, structureini=None):
+    def __init__(self, path: str = None, databaseini: str = None, structureini: str = None, log_path: str = None):
         self.path = path if path else '.cfg_edwar'
         self.databaseini = databaseini if databaseini else 'database.ini'
         self.structureini = structureini if structureini else 'structure.ini'
+        self.log_path = log_path if log_path else '.log'
 
 
 class Structure:

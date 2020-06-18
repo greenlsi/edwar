@@ -1,5 +1,6 @@
 import logging
 import pandas as pd
+import numpy as np
 
 from . import utils
 from ..errors import *
@@ -43,10 +44,11 @@ def _load_single_file(directory, file, list_of_columns):
         # raise FileFormatError(file, expected_format, 'unknown')
         return
     else:
-        period = utils.get_time_difference(data.index[0], data.index[1])
-        for i in range(1, len(data.index) - 1):
-            period = min(period, utils.get_time_difference(data.index[i], data.index[i+1]))
-        data.frequency = 1/period
+        period = min(data1.iloc[:, 2].shift(-1) - data1.iloc[:, 2])
+        try:
+            data.frequency = 1/period
+        except ZeroDivisionError:
+            data.frequency = np.inf
         log.info("EVERION data in {} file loaded.".format(file))
         return data
 
@@ -73,15 +75,14 @@ def _load_ibi_file(directory, file, list_of_columns):
     try:
         data1 = data1[data1.index != 0]
         data1.index = data1.index - 1
-        data = pd.DataFrame(data1.iloc[:, 4]/1000.0)
-        start_time = data1.iloc[:, 2][0]
-        new_index = [start_time]
-        for i in range(0, len(data1) - 1):
-            next_ts = new_index[-1] + data1.iloc[:, 4][i] / 1000.0  # to improve precision of ts of everion (1 second)
-            if data1.iloc[:, 2][i+1] - next_ts > 1:            # if time difference major than 1 second (precision)
-                next_ts = data1.iloc[:, 2][i+1]
-            new_index += [next_ts]
-        data.index = pd.to_datetime(new_index, unit="s")
+        data = pd.DataFrame(data1.iloc[:, 4] / 1000.0)
+        data1['expected_ts'] = ((data1.iloc[:, 2] + data1.iloc[:, 4] / 1000.0).shift()).fillna(0)
+        data1['reference'] = np.where((data1.iloc[:, 2] - data1['expected_ts']) > 2, data1.iloc[:, 2], np.nan)
+        data1['reference'] = data1['reference'].fillna(method='ffill')
+        grouper = (data1['reference'] != data1['reference'].shift()).cumsum()
+        data1['sum'] = data1.iloc[:, 4].groupby(grouper).transform(lambda x: x.cumsum().shift().fillna(0)) / 1000.0
+        data1['new_index'] = data1['reference'] + data1['sum']
+        data.index = pd.to_datetime(data1['new_index'].values * 1000, unit="ms")
         data.columns = list_of_columns
         data.frequency = None
     except Exception:

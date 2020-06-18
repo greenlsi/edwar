@@ -7,161 +7,144 @@
 import pandas as pd
 import numpy as np
 # import warnings
-import matplotlib.pyplot as plt
-import datetime
-from scipy.stats import norm
+from itertools import accumulate
 
 from .variables import *
-from ..utils import get_diff_seconds
 
 
 def __tacogram(ibi):
-    ibi1 = ibi.copy()
-    for i in range(0, len(ibi1) - 1):
-        ibi_i = get_diff_seconds(ibi1.index[i], ibi1.index[i + 1])
-        if ibi_i < 0 or ibi1.values[i] < 0:
-            raise ValueError('(!) IBI value can not be negative: {}->{}, {}->{}'.format(ibi1.index[i], ibi1.values[i],
-                                                                                        ibi1.index[i+1],
-                                                                                        ibi1.values[i+1]))
-        elif abs(ibi_i - ibi1.values[i]) > 0.01:  # error of 10 ms is allowed
-            new_date = ibi1.index[i] + np.timedelta64(int(ibi1.values[i] * 1e9), 'ns')
-            new_ibi = ibi_i - ibi1.values[i]
-            ibi1 = ibi1.append(pd.DataFrame([new_ibi], index=[new_date], columns=['IBI']))
-    ibi1 = ibi1.sort_index()
-    return ibi1
+    ibi1 = pd.DataFrame(ibi['IBI'].values, columns=['IBI'])
+    ibi1['c_date'] = ibi.index
+    ibi1['next_date'] = ibi1['c_date'].shift(-1)
+    ibi1.loc[ibi1.index[-1], 'next_date'] = (ibi1['c_date'].values[-1] +
+                                             np.timedelta64(int(ibi1['IBI'].values[-1]), 's'))
+    # Compare IBI calculated with IBI given to check there are not time lapsus
+    ibi1['real_ibi'] = (ibi1['next_date'].values - ibi1['c_date'].values) / pd.Timedelta(1, 's')
+    # Check there are not negative IBIs or timestamp values before to previous ones
+    illegal = ibi1.loc[(ibi1['IBI'].values < 0) | (ibi1['real_ibi'].values < ibi1['IBI'].values)]
+    ibi1 = ibi1.drop(illegal.index)
+    ibi1['next_date1'] = ibi1['c_date'] + pd.to_timedelta(ibi1['IBI'], unit='s')
+    ibi1['next_ibi1'] = ibi1['real_ibi'] - ibi1['IBI']  # next_ibi1 = 0 if there is no time lapsus
+
+    if not illegal.empty:
+        pass
+        # raise ValueError('(!) IBI value can not be negative: {}->{}, {}->...'.format(
+        #     illegal['c_date'][illegal.index[0]], illegal['IBI'][illegal.index[0]],
+        #     illegal['next_date'][illegal.index[0]]))
+        # TODO: log warning
+
+    # Create IBIs to add
+    out = ibi1.loc[abs(ibi1['next_ibi1'].values) > MAX_ERROR_MARGIN_TS, ('next_date1', 'next_ibi1')]
+    output = pd.DataFrame(np.concatenate((ibi['IBI'].values, out['next_ibi1'].values)),
+                          index=np.concatenate((ibi.index, out['next_date1'].values)), columns=['IBI'])
+    output = output.sort_index()
+    return output
 
 
 def _error_detection(ibi):
-    max_diff_ibi = 0.2  # maximum ibi gradient value in seconds
-    ibi['ERROR'] = np.zeros(len(ibi['IBI']))
-    ibi['CORRECTED'] = np.zeros(len(ibi['IBI']))
-    ibi['DIFF'] = np.concatenate((np.diff(np.array(ibi['IBI']).flatten()), [0]))
+    ibi1 = ibi.copy()
+    ibi1['ERROR'] = 0
+    ibi1['CORRECTED'] = 0
+    ibi1['prev_DIFF'] = np.concatenate(([0], np.diff(np.array(ibi1['IBI']).flatten())))
+    ibi1['next_DIFF'] = np.concatenate((np.diff(np.array(ibi1['IBI']).flatten()), [0]))
+    # method 1: hard limits
+    ibi1.loc[(ibi['IBI'].values > MAX_IBI) | (ibi1['IBI'].values < MIN_IBI), 'ERROR'] = 1
+    # method 2: gradient limit
+    ibi1['prev_ERROR'] = ibi1['ERROR'].shift()
+    ibi1['next_ERROR'] = ibi1['ERROR'].shift(-1)  # if reference is valid (previous sample), apply method 2
+    ibi1.loc[(abs(ibi1['prev_DIFF'].values) > MAX_DIFF_IBI) & (ibi1['prev_ERROR'].values != 1), 'ERROR'] = 1
+    ibi1.loc[(abs(ibi1['next_DIFF'].values) > MAX_DIFF_IBI) & (ibi1['next_ERROR'].values != 1), 'ERROR'] = 1
 
-    for i in range(0, len(ibi)-1):
-        if ibi['IBI'][i] > MAX_IBI or ibi['IBI'][i] < MIN_IBI:  # method 1: hard limits
-            ibi['ERROR'][i] = 1
-
-        elif abs(ibi['DIFF'][i]) > max_diff_ibi:                # method 2: gradient limit
-            ibi['ERROR'][i + 1] = 1                             # if reference is valid, apply method 2 to next sample
-
-    if ibi['IBI'][-1] > MAX_IBI or ibi['IBI'][-1] < MIN_IBI:    # method 1: only value left to check
-        ibi['ERROR'][-1] = 1
-
-    return ibi
+    return ibi1[['IBI', 'ERROR', 'CORRECTED']]
 
 
-def __wide_correction(ibi_pre2, ibi_pre1, ibi_e, ibi_pos1, ibi_pos2):  # buffer of 4 samples
-    ibi_c = pd.DataFrame()  # new IBIs corrected
-    ibi_d = pd.DataFrame()  # IBIs to be deleted
-    if ibi_e['IBI'] > MAX_CORRECTION_TIME:
-        pass
-        # print('(!) IBI is interrupted at {} {} seconds (max {}), so correction is not possible'.format(
-        #       ibi_e.index, round(ibi_e, 2), max_correction_time))  # TODO: log warning
-    else:
-        prev_reference = ibi_pos1['IBI'] if ibi_pre1 is None else ibi_pre1['IBI']
-        post_reference = ibi_pre1['IBI'] if ibi_pos1 is None else ibi_pos1['IBI']
-        diff = abs(ibi_e['DIFF']) if ibi_pre1 is None else abs(ibi_e['DIFF']) + abs(ibi_pre1['DIFF'])
-        n_ibis = int(round(ibi_e['IBI'] / np.mean([prev_reference, post_reference])))  # how many IBIs needed
+def __wide_correction(ibi):  # buffer of 4 samples
+    ibi1 = __error_intervals_sum(ibi.copy())
+    ibi1['prev_IBI1'] = ibi1['IBI'].shift(1)
+    ibi1['prev_IBI2'] = ibi1['IBI'].shift(2)
+    ibi1['post_IBI1'] = ibi1['IBI'].shift(-1)
+    ibi1['post_IBI2'] = ibi1['IBI'].shift(-2)
+    ibi1['prev_IBI1'].fillna(ibi1['post_IBI1'], inplace=True)
+    ibi1['post_IBI1'].fillna(ibi1['prev_IBI1'], inplace=True)
+    ibi1['prev_IBI2'].fillna(ibi1['post_IBI1'], inplace=True)
+    ibi1['post_IBI2'].fillna(ibi1['prev_IBI1'], inplace=True)
+    ibi1['date'] = ibi1['prev_date1'] = ibi1['post_date1'] = ibi1.index
+    ibi1['prev_date1'] = ibi1['prev_date1'].shift(1)
+    ibi1['post_date1'] = ibi1['post_date1'].shift(-1)
+    ibi2 = ibi1.loc[ibi1['ERROR'] != 0, :].copy()
+    ibi2['n_ibis'] = ibi2['IBI'].values / ibi2[['prev_IBI1', 'post_IBI1']].mean(axis=1)
 
-        if n_ibis >= 1:     # create more IBIs (peaks not detected)
-            new_ibi_mean = ibi_e['IBI'] / n_ibis
-            if (abs(new_ibi_mean - prev_reference) + abs(new_ibi_mean - post_reference)) >= diff:
-                # if error with new ibi increases, do nothing
-                pass
-            else:
-                max_var = 0.05
-                rand_numbers = np.random.rand(n_ibis)
-                rand_numbers = (rand_numbers - np.mean(rand_numbers)) / np.std(rand_numbers)
-                new_interval = rand_numbers / max(abs(rand_numbers)) * max_var + new_ibi_mean
-                ts = ibi_e.name
-                new_index = [ts]
-                for i in range(0, len(new_interval) - 1):
-                    ts += datetime.timedelta(seconds=new_interval[i])
-                    new_index.append(ts)
-                ibi_c['IBI'] = new_interval
-                ibi_c['ERROR'] = np.ones(len(new_interval))
-                ibi_c['CORRECTED'] = np.ones(len(new_interval))
-                ibi_c['DIFF'] = np.concatenate((np.diff(np.array(ibi_c['IBI']).flatten()), [ibi_pos1['IBI'] -
-                                                                                            new_interval[-1]]))
-                ibi_c.index = new_index
-                ibi_d = ibi_d.append(ibi_e)
-        else:           # delete IBIs (trigger false peaks)
-            if ibi_pos1 is None or ibi_pre1 is None:
-                # check if last or first ibi: remove it directly
-                ibi_d = ibi_d.append(ibi_e)
-            else:
-                # case 1: add extra ibi to next & calculate error
-                ibi_new1 = ibi_e['IBI'] + ibi_pos1['IBI']
-                prev_reference1 = ibi_pre1['IBI']
-                if ibi_pos2 is not None:
-                    post_reference1 = ibi_pos2['IBI']
-                else:
-                    post_reference1 = ibi_new1
-                error_pos = abs(ibi_new1 - prev_reference1) + abs(ibi_new1 - post_reference1)
+    # CASE A: MISSING IBIs
+    # TODO: log warning # ibi.loc[ibi['IBI'].values > MAX_CORRECTION_TIME]
+    add_ibis = ibi2.loc[(ibi2['n_ibis'].round() > 1) & (ibi2['IBI'].values < MAX_CORRECTION_TIME)].copy()
 
-                # case 2: add extra ibi to previous & calculate error
-                ibi_new2 = ibi_e['IBI'] + ibi_pre1['IBI']
-                post_reference2 = ibi_pos1['IBI']
-                if ibi_pre2 is not None:
-                    prev_reference2 = ibi_pre2['IBI']
-                else:
-                    prev_reference2 = ibi_new2
-                error_pre = abs(ibi_new2 - prev_reference2) + abs(ibi_new2 - post_reference2)
+    def generate_random_ibis(ts0, n, ref1, ref2):
+        increment = (ref2 - ref1)/n
+        linear_interpolation = np.array([increment]*n).cumsum() + ref1
+        rand_numbers = np.random.rand(n)
+        rand_numbers = (rand_numbers - np.mean(rand_numbers)) / np.std(rand_numbers)
+        rand_ibis = list(rand_numbers / max(abs(rand_numbers)) * MAX_VAR + linear_interpolation)
+        rand_dates = [ts0] + [ts0 + td for td in list(accumulate(pd.to_timedelta(rand_ibis, unit="s")))][:-1]
+        return pd.DataFrame(rand_ibis, index=rand_dates, columns=['IBI'])
 
-                if error_pre > error_pos:
-                    # apply case 1
-                    ibi_c['IBI'] = [ibi_new1]
-                    ibi_c['ERROR'] = [1]
-                    ibi_c['CORRECTED'] = [1]
-                    ibi_c['DIFF'] = [post_reference1 - ibi_new1]
-                    ibi_c.index = [ibi_e.name]
-                    ibi_d = ibi_d.append(ibi_e)
-                    ibi_d = ibi_d.append(ibi_pos1)
-                else:
-                    # apply case 2
-                    ibi_c['IBI'] = [ibi_new2]
-                    ibi_c['ERROR'] = [1]
-                    ibi_c['CORRECTED'] = [1]
-                    ibi_c['DIFF'] = [post_reference2 - ibi_new2]
-                    ibi_c.index = [ibi_pre1.name]
-                    ibi_d = ibi_d.append(ibi_e)
-                    ibi_d = ibi_d.append(ibi_pre1)
-    return ibi_c, ibi_d
+    ibis_created = pd.DataFrame()
+    if not add_ibis.empty:
+        ibis_created = pd.concat(
+            list(map(generate_random_ibis, add_ibis['date'], (add_ibis['n_ibis'].round()).astype(int),
+                     add_ibis['prev_IBI1'], add_ibis['post_IBI1'])), axis=0
+        )
+        ibis_created['ERROR'] = 1
+        ibis_created['CORRECTED'] = 1
+
+    # CASE B: EXTRA IBIs
+    ibis_edited = pd.DataFrame()
+    edit_ibis = ibi2.loc[(ibi2['n_ibis'].values < 0.5)].copy()
+    to_remove = list(edit_ibis.index)
+    edit_ibis['ibi_new1'] = edit_ibis['IBI'] + edit_ibis['post_IBI1']
+    edit_ibis = edit_ibis.dropna(subset=["prev_date1", "post_date1"])  # remove sample directly if it is first or last
+    if not edit_ibis.empty:
+        # case 1: add extra ibi to next sample & calculate error
+        edit_ibis['err1'] = (abs(edit_ibis['IBI'] + edit_ibis['post_IBI1'] - edit_ibis['prev_IBI1']) +
+                             abs(edit_ibis['IBI'] + edit_ibis['post_IBI1'] - edit_ibis['post_IBI2']))
+        # case 2: add extra ibi to previous sample & calculate error
+        edit_ibis['err2'] = (abs(edit_ibis['IBI'] + edit_ibis['prev_IBI1'] - edit_ibis['prev_IBI2']) +
+                             abs(edit_ibis['IBI'] + edit_ibis['prev_IBI1'] - edit_ibis['post_IBI1']))
+
+        # Choose best option
+        ibis_edited['IBI'] = np.select([edit_ibis['err1'].values > edit_ibis['err2'].values],
+                                       [edit_ibis['IBI'].values + edit_ibis['prev_IBI1'].values],
+                                       edit_ibis['IBI'].values + edit_ibis['post_IBI1'].values)
+        ibis_edited.index = np.select([edit_ibis['err1'].values > edit_ibis['err2'].values],
+                                      [edit_ibis['prev_date1'].values],
+                                      edit_ibis['date'].values)
+        ibis_edited['ERROR'] = 1
+        ibis_edited['CORRECTED'] = 1
+
+    # in case 1 next ibi must be removed
+    next_ibis_to_drop = list(edit_ibis.loc[ibis_edited.index == edit_ibis['date'], 'post_date1'])
+    remove_ibis = list(set(list(add_ibis.index) + to_remove + list(ibis_edited.index) + next_ibis_to_drop))
+    return remove_ibis, ibis_created, ibis_edited
 
 
 def __error_intervals_sum(ibi):
-    ibi['dates'] = ibi.index
-    ibi = ibi.groupby([(ibi.ERROR * ibi.ERROR.shift() != 1).cumsum()], as_index=False).agg({
+    ibi1 = ibi.copy()
+    ibi1['dates'] = ibi1.index
+    ibi1['group'] = (ibi1['ERROR'] * ibi1['ERROR'].shift() != 1).cumsum()
+    ibi1 = ibi1.groupby(ibi1['group'], as_index=False).agg({
         'IBI': sum, 'ERROR': max, 'CORRECTED': min, 'dates': min})
-    ibi = ibi.set_index('dates')
-    ibi = ibi.rename_axis(None)
-    ibi['DIFF'] = np.concatenate((np.diff(np.array(ibi['IBI']).flatten()), [0]))
-    return ibi
+    ibi1 = ibi1.set_index('dates')
+    ibi1 = ibi1.rename_axis(None)
+    ibi1['DIFF'] = np.concatenate(([0], np.diff(np.array(ibi1['IBI']).flatten())))
+    return ibi1[['IBI', 'ERROR', 'CORRECTED', 'DIFF']]
 
 
 def _error_correction(ibi):
-    ibis_to_drop = list()
-    ibis_to_add = list()
-    ibi = __error_intervals_sum(ibi)
-    for i in range(0, len(ibi)):
-        pre_value1 = ibi.iloc[i - 1] if i > 1 else None
-        pre_value2 = ibi.iloc[i - 2] if i > 2 else None
-        pos_value1 = ibi.iloc[i + 1] if i + 1 < len(ibi['IBI']) else None
-        pos_value2 = ibi.iloc[i + 2] if i + 2 < len(ibi['IBI']) else None
-        if ibi['ERROR'][i] != 0:
-            ibi_to_add, ibi_to_drop = __wide_correction(pre_value2, pre_value1, ibi.iloc[i], pos_value1, pos_value2)
-            if not ibi_to_add.empty:
-                ibis_to_add.append(ibi_to_add)
-            if not ibi_to_drop.empty:
-                ibis_to_drop.append(ibi_to_drop)
-
-    for a in ibis_to_drop:  # remove selected intervals
-        ibi = ibi.drop(a.index, axis=0)
-
-    for a in ibis_to_add:  # add new intervals created
-        ibi = ibi.append(a, sort=False)
-    ibi = ibi.sort_index()
-    return ibi[['IBI', 'ERROR', 'CORRECTED', 'DIFF']]
+    ibi1 = __error_intervals_sum(ibi)
+    remove_ibi, add_ibi1, add_ibi2 = __wide_correction(ibi1)
+    ibi1 = ibi1.drop(remove_ibi)
+    new_ibi = pd.concat([ibi1[['IBI', 'ERROR', 'CORRECTED']], add_ibi1, add_ibi2], axis=0)
+    new_ibi = new_ibi.sort_index()
+    return new_ibi
 
 
 def check_ibi(ibi, correction=True):
@@ -175,43 +158,21 @@ def check_ibi(ibi, correction=True):
     return corrected[['IBI', 'ERROR', 'CORRECTED']]
 
 
-def __print_diff_ibi(ibi):
+def calculate_hr(ibi):
+    hr = pd.DataFrame()
     try:
-        ibi1 = ibi.loc[ibi['ERROR'] == 0]
+        hr['HR'] = 60/ibi.loc[(ibi['ERROR'].values == 0) | (ibi['CORRECTED'].values == 1), 'IBI'].copy()
     except KeyError:
-        ibi1 = ibi
-    signal = ibi1[['IBI']] * 1000
-    diff = np.concatenate(([0], np.diff(np.array(signal).flatten())))
-    plt.figure(1)
-    plt.scatter(signal['IBI'][:-1], signal['IBI'][1:], s=2)
-    plt.title('IBI diff')
-    plt.xlabel('IBI(t-1) [ms]')
-    plt.ylabel('IBI(t) [ms]')
-    plt.grid()
-    plt.figure(2)
-    # best fit of data
-    (mu, sigma) = norm.fit(diff)  # mean and standard deviation
-    print('TOTAL -> pos_mean = {:.5f}, pos_std = {:.5f}, neg_mean = {:.5f}, neg_std = {:.5f}'.format(
-        np.mean(diff[diff > 0]), np.std(diff[diff > 0]), np.mean(diff[diff < 0]), np.std(diff[diff < 0])))
-    count, bins, ignored = plt.hist(diff, 100, density=1)
-    y = norm.pdf(bins, mu, sigma)
-    plt.plot(bins, y, 'r--', linewidth=2)
-    plt.title('Histogram diff IBI')
-    plt.ylabel('Prob')
-    plt.xlabel('ms')
-    plt.show()
-    limits = [500, 700, 900]  # ms
-    diffs = list()
-    diffs.append(np.diff(np.array(signal.loc[(signal['IBI'] < limits[0])]).flatten()))
-    for i in range(0, len(limits) - 1):
-        diffs.append(np.diff(np.array(signal.loc[(limits[i] < signal['IBI']) & (signal['IBI'] < limits[i + 1])]).
-                             flatten()))
-    diffs.append(np.diff(np.array(signal.loc[(limits[-1] < signal['IBI'])]).flatten()))
-    for j in range(0, len(limits)):
-        if diffs[j][diffs[j] > 0].size != 0:
-            print('IBI < {} -> pos_mean = {:.5f}, pos_std = {:.5f}, neg_mean = {:.5f}, neg_std = {:.5f}'.
-                  format(limits[j], np.mean(diffs[j][diffs[j] > 0]), np.std(diffs[j][diffs[j] > 0]),
-                         np.mean(diffs[j][diffs[j] < 0]), np.std(diffs[j][diffs[j] < 0])))
-    print('IBI > {} -> pos_mean = {:.5f}, pos_std = {:.5f}, neg_mean = {:.5f}, neg_std = {:.5f}'.
-          format(limits[-1], np.mean(diffs[-1][diffs[-1] > 0]), np.std(diffs[-1][diffs[-1] > 0]),
-                 np.mean(diffs[-1][diffs[-1] < 0]), np.std(diffs[-1][diffs[-1] < 0])))
+        hr['HR'] = 60/ibi['IBI']
+    # return hr[['HR']].resample('{}s'.format(HR_FREQ), label='right').mean()
+    hr1 = hr[['HR']].rolling('10s', min_periods=1).mean()
+    return hr1.resample('{}s'.format(HR_FREQ), label='right').last()
+
+
+def calculate_josue_hr(ibi):
+    hr = pd.DataFrame()
+    hr['IBI'] = ibi['IBI'].copy()
+    hr['HR'] = 1
+    hr1 = hr[['HR']].resample('1s'.format(HR_FREQ)).sum()
+    hr2 = hr1.rolling(60, min_periods=MIN_HR).sum()
+    return hr2.resample('{}s'.format(HR_FREQ), label='right').last()

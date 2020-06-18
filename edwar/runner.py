@@ -1,4 +1,5 @@
 import logging
+import inspect
 from datetime import datetime
 
 from .loaders import *
@@ -30,7 +31,7 @@ class AbstractRun(ABC):
 
 
 class Run(AbstractRun):
-    def __init__(self, path: str, device: str, logs_path: str = None, **kwargs):
+    def __init__(self, path: str, device: str, **kwargs):
         super().__init__(path, device)
         for k, v in kwargs.items():
             if k == 'settings':  # Optional settings alternative path
@@ -41,7 +42,7 @@ class Run(AbstractRun):
                 self.parsers.update({k: v})  # Optional temporal use of a parser not specified in configuration
 
         # LOGS: one for how the platform is working and other for data and its process
-        setup_logger('EDWAR', log_directory=logs_path)
+        setup_logger('EDWAR', log_directory=self.settings.log_path)
 
     @staticmethod
     def load(my_settings: classmethod, my_path: str, my_device: str, my_loader: classmethod = None) \
@@ -62,11 +63,11 @@ class Run(AbstractRun):
                     raise CodeImportedError(load_method)
 
         # check loader is well implemented
-        if not issubclass(my_loader, Loader):
-            log.critical("Loader {} is not a subclass of {}.".format(my_loader.__name__, Loader.__name__))
-            raise SubclassError(my_loader.__name__, Loader.__name__)
-        else:
+        if inspect.isclass(my_loader) and issubclass(my_loader, Loader):
             log.info("Loader {} of {} data successfully selected.".format(my_loader.__name__, my_device))
+        else:
+            log.critical("Loader {} is not a subclass of {}.".format(my_loader, Loader.__name__))
+            raise SubclassError(my_loader, Loader.__name__)
 
         data = my_loader(path=my_path, settings=my_settings).get_data()
         return data
@@ -89,13 +90,13 @@ class Run(AbstractRun):
         parsers.update(my_parsers)
 
         # Check all parsers are subclass of Parser
-        for p in parsers.keys():
-            if not issubclass(parsers[p], Parser):
-                log.error("Parser {} is not a subclass of {}, so it can not be used.".format(p, Parser.__name__))
-                del parsers[p]
+        for p in parsers.copy().keys():
+            if inspect.isclass(parsers[p]) and issubclass(parsers[p], Parser):
+                log.info("Parser {} successfully selected.".format(p))
                 # raise SubclassError(p, Parser.__name__)
             else:
-                log.info("Parser {} successfully selected.".format(p))
+                log.error("Parser {} is not a subclass of Parser, so it can not be used.".format(p))
+                del parsers[p]
 
         # Run parsers
         outputs = list()
@@ -105,17 +106,21 @@ class Run(AbstractRun):
             for df in data_in:
                 i = [data for data in df.columns if ((data in p().inputs) or (data in p().optional_inputs))]
                 if i:
-                    inputs.append(df[i])
+                    data_to_parser = df[i]
+                    data_to_parser.frequency = df.frequency
+                    inputs.append(data_to_parser)
             log.info("Executing parser {}.".format(parser_name))
             try:
                 output = p().run(inputs)
+            except UserWarning as warn:
+                log.warning('Parser {}: {}'.format(parser_name, warn))
             except Exception as err:
-                log.error('Parser {} unexpected error: {}'.format(parser_name, err))
+                log.error('Parser {} unexpected error: {}.'.format(parser_name, err))
             else:
                 if isinstance(output, pd.DataFrame):
                     output.parser_name = parser_name
                     outputs.append(output)
-                    log.info("Parser {} results ready".format(parser_name))
+                    log.info("Parser {} results ready.".format(parser_name))
                 elif isinstance(output, list):
                     n = 0
                     for o in output:
@@ -123,13 +128,14 @@ class Run(AbstractRun):
                         if isinstance(o, pd.DataFrame):
                             o.parser_name = parser_name
                             outputs.append(o)
-                            log.info("Parser {} result {} ready".format(parser_name, n))
+                            log.info("Parser {} result {} ready.".format(parser_name, n))
                         else:
                             log.error("Unexpected output {} from {}, expected a dataframe.".format(parser_name, n))
                 else:
                     log.error("Unexpected output from {}, expected a dataframe.".format(parser_name))
 
         if not outputs:
+            log.error('No data could be processed.')
             raise NoOutputDataError()
         return outputs
 
@@ -177,10 +183,10 @@ class Run(AbstractRun):
             try:
                 os.mkdir(path)
             except Exception as err:
-                log.error("Save directory {} not found. New {} could not be created: {}".format(path, path, err))
+                log.error("Save directory {} not found. New could not be created: {}.".format(path, err))
                 return self.output
             else:
-                log.info("Save directory {} not found. New {} created".format(path, path))
+                log.warning("Save directory {} not found. New created.".format(path))
 
         for output in outputs:
             columns = output.columns
@@ -212,8 +218,8 @@ class Run(AbstractRun):
                 log.error('Unexpected error uploading to database output data {} from parser {}: {}.'.format(
                     list(output.columns), output.parser_name, err))
             else:
-                log.info('Output data {} from parser {} already updated to database'.format(list(output.columns),
-                                                                                            output.parser_name))
+                log.info('Output data {} from parser {} already updated to database.'.format(list(output.columns),
+                                                                                             output.parser_name))
         return self.output
 
     def get_input(self):

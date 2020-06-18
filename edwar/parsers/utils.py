@@ -13,6 +13,34 @@ def get_diff_seconds(ts1, ts2):
     return diff_seconds
 
 
+def butter_lowpass(cutoff, fs, order=5):
+    # Filtering Helper functions
+    nyq = 0.5 * fs
+    normal_cutoff = cutoff / nyq
+    # noinspection PyTupleAssignmentBalance
+    b, a = signal.butter(order, normal_cutoff, btype='low', analog=False)
+    return b, a
+
+
+def butter_lowpass_filter(data, cutoff, fs, order=5):
+    # Filtering Helper functions
+    b, a = butter_lowpass(cutoff, fs, order=order)
+    y = signal.lfilter(b, a, data)
+    return y
+
+
+def calculate_xyz(data):
+    x = data['ACCx'].values  # x-axis
+    y = data['ACCy'].values  # y-axis
+    z = data['ACCz'].values  # z-axis
+
+    x_y_z = np.sqrt(pow(x, 2) + pow(y, 2) + pow(z, 2))
+    xyz = np.concatenate((np.array([0]), np.diff(x_y_z))) + np.mean(x_y_z)
+    xyz_f = butter_lowpass_filter(xyz, 1.0, 8, 6)
+
+    return xyz_f
+
+
 def frequency_conversion(data, f, **kwargs):
     input_frequency = data.frequency
     output_frequency = f
@@ -34,6 +62,7 @@ def frequency_conversion(data, f, **kwargs):
         x1 = data_resample(x, output_samples, **kwargs)
         # Insert data in new dataframe
         data1[c] = x1
+    data1.frequency = f
     return data1
 
 

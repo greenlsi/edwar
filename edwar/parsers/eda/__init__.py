@@ -1,1 +1,1 @@
-from . import eda_module
+from .eda import process_eda

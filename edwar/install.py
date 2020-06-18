@@ -58,12 +58,12 @@ def all_cfgs(settings=configure.Settings(), default=True):
 def structure_cfg(settings=configure.Settings(), default=True):
     path = settings.path
     if not os.path.exists(path):
-        print("Configuration directory {} not found. New {} created".format(path, path))
+        print("Configuration directory {} not found. New created.".format(path))
         os.mkdir(path)
     structure_ini_file = settings.structureini
     structure_ini_path = os.path.join(path, structure_ini_file)
     if not os.path.exists(structure_ini_path):
-        print("Configuration file {} not found. New {} created".format(structure_ini_file, structure_ini_file))
+        print("Configuration file {} not found. New created.".format(structure_ini_file))
         open(structure_ini_path, "w+")
 
     if default:
@@ -76,13 +76,13 @@ def structure_cfg(settings=configure.Settings(), default=True):
 def database_cfg(settings=configure.Settings()):
     path = settings.path
     if not os.path.exists(path):
-        print("Configuration directory {} not found. New {} created".format(path, path))
+        print("Configuration directory {} not found. New created.".format(path))
         os.mkdir(path)
     db_ini_file = settings.databaseini
     db_ini_path = os.path.join(path, db_ini_file)
     if not os.path.exists(db_ini_path):
         order = "w+"
-        print("Configuration file {} not found. New {} created".format(db_ini_file, db_ini_file))
+        print("Configuration file {} not found. New created.".format(db_ini_file))
     else:
         order = "w"
     f = open(db_ini_path, order)
