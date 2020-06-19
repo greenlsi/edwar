@@ -26,6 +26,7 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
+MANIFEST.in
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -124,3 +125,17 @@ dmypy.json
 
 #Pycharm stuff
 .idea/
+data
+
+#Code not relevant
+acc_correlation_study.py
+loader.py
+testParser.py
+docker.py
+graph.py
+graphp.py
+pruebaVarEDA.m
+db.ini
+data_to_db_adapter.py
+upload_data.py
+
