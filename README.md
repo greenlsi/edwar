@@ -1,11 +1,12 @@
-# edwar
+![EDWAR](logoEDWAR.png)
 #### signal Error Detection for WBSN And data Recovery.
 Edwar is a system based on several
 modules that allows processing of data collected by different 
-devices such as empatica or everion for the detection and correction 
-of artifacts and the subsequent feature extraction.
+devices such as [E4](https://www.empatica.com/en-eu/research/e4/) or 
+[Everion](https://www.biovotion.com/everion/).
 
-The development of this project is based on the previous projects
-[eda-explorer](https://github.com/MITMediaLabAffectiveComputing/eda-explorer) 
-and [ledapy](https://github.com/HIIT/Ledapy).
+The processing focuses on features extraction, but it can include signal error
+detection, and signal correction or reconstruction. 
+
+
 
