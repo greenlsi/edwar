@@ -8,5 +8,6 @@ devices such as [E4](https://www.empatica.com/en-eu/research/e4/) or
 The processing focuses on features extraction, but it can include signal error
 detection, and signal correction or reconstruction. 
 
+![general_structure1](https://user-images.githubusercontent.com/17572800/87205868-b3af8280-c308-11ea-9c8f-95d100f4343e.png)
 
 
