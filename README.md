@@ -1,5 +1,5 @@
 ![logoEDWAR](https://user-images.githubusercontent.com/17572800/87205571-0c325000-c308-11ea-89d9-c6f3bf6598af.png)
-## signal Error Detection for WBSN And data Recovery.
+#### signal Error Detection for WBSN And data Recovery.
 Edwar is a system based on several
 modules that allows processing of data collected by different 
 devices such as [E4](https://www.empatica.com/en-eu/research/e4/) or 
@@ -32,16 +32,27 @@ The supermodule Run interconects all modules according th the following schema:
 
 ![general_structure1](https://user-images.githubusercontent.com/17572800/87205868-b3af8280-c308-11ea-9c8f-95d100f4343e.png)
 
+
+<a name="read"></a>
 # Data Reading
 Currently, data can be read from E4 and Everion devices. In the structure configuration, file names must be given. The path to the file is not relevant, it will be 
 specified in the Run supermodule parameters. For each file, the Loader needs the name of the signals in each column. The order is important. In accelerometry file, for example, the variables are x, y, z, not y, x, z or z, y, x. The name of the variables must coincide with the Parsers input name. Otherwise the Parser will not recognize the signal. 
-These inputs are descibe in Parsers Processing
+These inputs are descibe in [Data Processing](#proc)
 
-## E4
-The E4 structures the data in several CSV files with the name of the signal as name of file (EDA.csv, IBI.csv...).
+### E4
+E4 structures the data in several CSV files with the name of the signal as name of file (EDA.csv, IBI.csv...).
 For the E4 Loader, only the name of the file must be introduced, with no extension (ACC.csv -> ACC). 
 
-## Everion
+### Everion
+Everion file name are long, so the user must introduce only a part, the signal name. For example, for the following IBI file:
+bop_1533550392847_IBI_5b2cc93e71b0710100a724db_1533160800_1533247259.csv -> IBI
+
+Everion files have several columns with IDs, timestamps, quality of measure... The Loader reads the variable values and timestamps columns. The variable name
+must be the one expected from the Parser. In case of sweating signal, Everion calls it GSR (Galvanic Skin Response), others use SC (Skin Conductivity), but the Parser module expects a variable called EDA (Electrodermal Activity).
+
+
+<a name="proc"></a>
+# Data Processing
 
 
 
