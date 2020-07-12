@@ -17,9 +17,10 @@ the structure file. This file can be generated with the following code:
 ```ruby
 edwar.install.structure_cfg()
 ```
+After the instalation, the system asks some information. 
 The user must introduce the name of the device, the Loader module needed, the files and variables to read and the Parsers and features to employ.
-The system can be configurated for several devices, each one with its own files, Loaders and Parsers. If the user wants to edit the configuration 
-for a specific device, this command must be used:
+The system can be configurated for several devices, each one with its own files, Loaders and Parsers. Initially there is a default configuration for E4 and
+Everion devices. If the user wants to edit the configuration for a specific device, this command must be used:
 ```ruby
 edwar.configure.devices()
 ```
@@ -48,12 +49,18 @@ Everion file name are long, so the user must introduce only a part, the signal n
 bop_1533550392847_IBI_5b2cc93e71b0710100a724db_1533160800_1533247259.csv -> IBI
 
 Everion files have several columns with IDs, timestamps, quality of measure... The Loader reads the variable values and timestamps columns. The variable name
-must be the one expected from the Parser. In case of sweating signal, Everion calls it GSR (Galvanic Skin Response), others use SC (Skin Conductivity), but the Parser module expects a variable called EDA (Electrodermal Activity).
+must be the one expected from the Parser. In case of sweating signal, Everion calls it GSR (Galvanic Skin Response), others use SC (Skin Conductivity), but the Parser module expects a variable called EDA.
 
 
 <a name="proc"></a>
 # Data Processing
+There are 4 Parsers. The following table describes the input variables and the output features calculated in each Parser.
 
+Input Variable | Parser | Output
+:---: | :---: | :---:
+*EDA* | `EDAparser` | *EDA, ERROR, SCL, SCR, SNMA*
+*IBI* | `IBIparser` | *IBI, ERROR, HR*
+*ACC* | `ACCparser` | *HAND, ACT*
 
 
 
