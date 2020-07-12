@@ -28,6 +28,8 @@ Finally, user can execute the system with the given configuration:
 edwar.Run(device='my_device', path='path_to_data_files').my_saver_module()
 ```
 The supermodule Run interconects all modules according th the following schema:
+
+
 ![general_structure1](https://user-images.githubusercontent.com/17572800/87205868-b3af8280-c308-11ea-9c8f-95d100f4343e.png)
 
 
