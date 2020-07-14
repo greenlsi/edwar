@@ -19,20 +19,20 @@ objtemp = TEMP
 
 [FEATURES EVERION]
 EDAparser = EDA, SCL, SCR
-IBIparser = IBI
+IBIparser = HR
 TEMPparser = TEMP
 
 [VARIABLES E4]
-ACC = ACCx,ACCy,ACCz
+IBI = IBI
+ACC = x,y,z
 EDA = EDA
 TEMP = TEMP
-IBI = IBI
 
 [FEATURES E4]
-IBIparser = IBI
+ACCparser = hand,activity
+IBIparser = HR
+EDAparser = EDA, SCL, SCR, SMNA
 TEMPparser = TEMP
-EDAparser = EDA, SCL, SCR
-ACCparser = ACCx, ACCy, ACCz
 '''
 
 

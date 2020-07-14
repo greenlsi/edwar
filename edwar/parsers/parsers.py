@@ -4,6 +4,7 @@ import functools
 
 from .ibi import check_ibi, calculate_hr, calculate_josue_hr
 from .eda import process_eda
+from .acc import predict_activity, generate_features
 from .parameters import *
 
 
@@ -24,7 +25,7 @@ class Parser(ABC):
         plus = list(optional_inputs.keys())
         for d in data:
             inputs += list(d.columns)
-        if [i for i in inputs if i in expected] != expected:
+        if set([i for i in inputs if i in expected]) != set(expected):
             raise ValueError('{} expected input is {}, but got {}'.format(name, expected, inputs))
         elif [i for i in inputs if i in plus] != plus:
             pass
@@ -58,18 +59,20 @@ class EDAparser(Parser):
 
 class ACCparser(Parser):
     def __init__(self):
-        super().__init__(inputs={'ACCx': 'g', 'ACCy': 'g', 'ACCz': 'g'},
-                         outputs={'ACCx': 'g', 'ACCy': 'g', 'ACCz': 'g'})
+        super().__init__(inputs={'x': 'g', 'y': 'g', 'z': 'g'},
+                         outputs={'x': 'g', 'y': 'g', 'z': 'g', 'hand': None, 'activity': None})
 
     def run(self, data):
         self.check_input(self.__class__.__name__, data, self.inputs, self.optional_inputs)
         out = self.adapt_input(data)
-        return out
+        features = generate_features(out)
+        activity = predict_activity(features)
+        return [out, activity]
 
 
 class IBIparser(Parser):
     def __init__(self, signal=IBI_SIGNAL, correction=IBI_CORRECTION):
-        super().__init__(inputs={'IBI': 's'}, outputs={'IBI': 's'})
+        super().__init__(inputs={'IBI': 's'}, outputs={'IBI': 's', 'HR': 'bpm'})
         self.signal = signal
         self.correction = correction
 

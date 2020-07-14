@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 
-from ..eda_explorer.EDA_Artifact_Detection_Script import classifyEpochs, getSVMFeatures, getWaveletData, getFeatures
+from .eda_explorer.EDA_Artifact_Detection_Script import classifyEpochs, getSVMFeatures, getWaveletData, getFeatures
 
 
 def __create_feature_df(data):
