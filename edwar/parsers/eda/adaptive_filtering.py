@@ -6,7 +6,6 @@ from datetime import timedelta
 from ..utils import butter_lowpass_filter
 from .nlms import nlms
 from .art_detect import detect_arts
-from edwar.loaders import e4 as cm
 
 
 def calculate_xyz(data):

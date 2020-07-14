@@ -5,7 +5,7 @@ from .utils import db_connection as db
 from .utils import configuration as conf
 from .utils import Settings
 from .utils.user_input import check_binary_answer, check_answer
-from .loaders.loader import __enum__
+from .loaders.loaders import __enum__
 
 __all__ = {
     'settings_location',
@@ -188,7 +188,7 @@ def print_data(device, settings=Settings(), input_device=True):
                     print(table_format.format(v, lo[v]))
             print(sep)
         else:
-            print("\n\t(!) No configuration of input files for device '{}' found.\n".format(device))
+            print("\t(!) No configuration of input files for device '{}' found.\n".format(device))
 
     else:
         da, wo, lo = conf.get_output_features(settings, device)
@@ -223,7 +223,7 @@ def print_data(device, settings=Settings(), input_device=True):
                     print(table_format.format(v, lo[v]))
             print(sep)
         else:
-            print("\n\t(!) No configuration of parsers for device '{}' found.\n".format(device))
+            print("\t(!) No configuration of parsers for device '{}' found.\n".format(device))
     return da, wo, lo
 
 
@@ -286,7 +286,7 @@ def parsers(device, settings=Settings()):
     print("\nDevice '{}' successfully configured!".format(device))
 
 
-def files_lockage(device=None, settings=Settings()):
+def files_lock(device=None, settings=Settings()):
     print('\n\t\t--Input Interface--')
     dev = conf.get_devices(settings)
     if not dev:
@@ -319,7 +319,7 @@ def files_lockage(device=None, settings=Settings()):
                     conf.unlock_file(settings, device, file)
 
 
-def parsers_lockage(device=None, settings=Settings()):
+def parsers_lock(device=None, settings=Settings()):
     print('\n\t\t--Output Interface--')
     dev = conf.get_devices(settings)
     if not dev:

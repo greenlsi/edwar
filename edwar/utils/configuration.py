@@ -11,7 +11,7 @@ def edit_device(settings, device: str, new_device: str = None, new_loader: str =
     try:
         variables = s.variables(device)
         features = s.features(device)
-    except KeyError:
+    except Exception:
         variables = dict()
         features = dict()
     s.remove_device(device)

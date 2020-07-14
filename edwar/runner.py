@@ -75,32 +75,33 @@ class Run(AbstractRun):
     @staticmethod
     def run(my_settings: classmethod, device: str, data_in: list, my_parsers: dict):
         log = logging.getLogger('EDWAR')
-        parsers = dict()
+        my_parsers1 = dict()
         parsers_in_cfg, working_parsers, locked_parsers = configuration.get_output_features(my_settings, device)
+
+        # Add or substitute parsers passed as parameter
+        my_parsers1.update(my_parsers)
+        
         # Check parsers in config file
         for p in working_parsers.keys():
-            if p not in parsers.keys():
+            if p not in my_parsers1.keys():
                 try:
-                    parsers.update({p: eval(p)})
+                    my_parsers1.update({p: eval(p)})
                 except NameError:
                     log.error('Parser {} not found.'.format(p))
                     # raise CodeImportedError(p)
 
-        # Add or substitute parsers passed as parameter
-        parsers.update(my_parsers)
-
         # Check all parsers are subclass of Parser
-        for p in parsers.copy().keys():
-            if inspect.isclass(parsers[p]) and issubclass(parsers[p], Parser):
-                log.info("Parser {} successfully selected.".format(p))
+        for p in my_parsers1.copy().keys():
+            if inspect.isclass(my_parsers1[p]) and issubclass(my_parsers1[p], Parser):
+                log.info("Parser {} successfully selected.".format(my_parsers1[p].__name__))
                 # raise SubclassError(p, Parser.__name__)
             else:
                 log.error("Parser {} is not a subclass of Parser, so it can not be used.".format(p))
-                del parsers[p]
+                del my_parsers1[p]
 
         # Run parsers
         outputs = list()
-        for p in parsers.values():
+        for p in my_parsers1.values():
             parser_name = p.__name__
             inputs = list()
             for df in data_in:
@@ -137,15 +138,22 @@ class Run(AbstractRun):
         if not outputs:
             log.error('No data could be processed.')
             raise NoOutputDataError()
-        return outputs
+        return outputs, my_parsers1
 
     @staticmethod
-    def adapt_output(my_settings: classmethod, device: str, data: list):
+    def adapt_output(my_settings: classmethod, device: str, data: list, my_parsers: dict):
         log = logging.getLogger('EDWAR')
-        parsers_in_cfg, working_parsers, locked_parsers = configuration.get_output_features(my_settings, device)
+        parsers_in_cfg, work_parsers_cfg, locked_parsers_cfg = configuration.get_output_features(my_settings, device)
         data1 = data.copy()
-        expected_return = dict()  # all parsers and the output they must return
-        not_returned = dict()  # all parsers and the output they not returned
+        expected_return = dict()                # all parsers and the output they must return
+        not_returned = dict()                   # all parsers and the output they not returned
+        working_parsers = dict()
+        for k, v in my_parsers.items():         # check output variables for each parser
+            if k in work_parsers_cfg.keys():     # if parser substitutes one in configuration, it takes its variables
+                working_parsers[v.__name__] = work_parsers_cfg[k]
+            else:                               # if it is an added parser, it takes all output variables
+                working_parsers[v.__name__] = '*'
+
         for w in working_parsers.keys():
             expected_return[w] = not_returned[w] = working_parsers[w].replace(' ', '').split(',')
         for d in data1:
@@ -155,6 +163,7 @@ class Run(AbstractRun):
                     selected = working_parsers[p]
                     if '*' in selected:
                         combined = list(d.columns)
+                        not_returned[p] = []
                     else:
                         combined = [col for col in d.columns if col in selected]
                         # list all expected outputs not returned yet
@@ -170,8 +179,9 @@ class Run(AbstractRun):
 
     def get_output(self):
         data_in = self.get_input()
-        data_out = self.run(device=self.device, data_in=data_in, my_settings=self.settings, my_parsers=self.parsers)
-        self.output = self.adapt_output(self.settings, self.device, data_out)
+        data_out, parsers_out = self.run(device=self.device, data_in=data_in, my_settings=self.settings,
+                                         my_parsers=self.parsers)
+        self.output = self.adapt_output(self.settings, self.device, data_out, parsers_out)
         return self.output
 
     def to_csv(self, path: str):

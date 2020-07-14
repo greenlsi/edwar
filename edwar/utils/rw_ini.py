@@ -44,7 +44,7 @@ class Structure:
     def remove_device(self, device):
         try:
             self.check_device(device)
-        except KeyError:
+        except Exception:
             pass
         else:
             del self._devices[device]
@@ -55,7 +55,7 @@ class Structure:
     def check_device(self, device):
         if device in self.devices().keys():
             return 1
-        self.log.critical("No device '{}' configured found.".format(device))
+        # self.log.critical("No device '{}' configured found.".format(device))
         raise DeviceNotFoundError(device)
 
     def variables(self, device):
