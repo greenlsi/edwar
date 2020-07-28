@@ -18,7 +18,10 @@ the structure file. This file can be generated with the following code:
 edwar.install.structure_cfg()
 ```
 After the installation, the system asks some information. 
-The user must introduce several data fields. The first field is the device name the name of the device, the Loader module needed, the files and variables to read and the Parsers and features to employ.
+The user must introduce several data fields. In the first field the user  the device name the name of the device, the Loader module needed, the files and variables to read and the Parsers and features to employ.
+
+![DIAGRAM_STEPS](https://user-images.githubusercontent.com/17572800/88675164-f041f300-d0ea-11ea-9885-c365e874ef42.png)
+
 The system can be configurated for several devices, each one with its own files, Loaders and Parsers. Initially there is a default configuration for E4 and
 Everion devices. If the user wants to edit the configuration for a specific device, this command must be used:
 ```ruby
