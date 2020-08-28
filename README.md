@@ -52,7 +52,7 @@ In the next steps, [variables](#read) and [features](#proc) must be declared for
 
 For each device, system asks for the input data, so file names must be given. Every Loader gives facilities to introduce this data, so it is important to know what expects each Loader before introducing the file names. The file path is not relevant, it will be 
 specified in the run function parameters. For each file, the Loader needs the name of the signals in each column. The order is important. In accelerometry file, for example, the variables are x, y, z, not y, x, z or z, y, x. The name of the variables must coincide with the Parser modules input name. Otherwise the Parser will not recognize the signal. 
-These inputs are descibe in [Data Processing](#proc)
+These inputs are descibe in [Data Processing](#proc).
 
 ### E4
 E4 structures the data in several CSV files with the name of the signal as name of file (EDA.csv, IBI.csv...).
@@ -68,9 +68,10 @@ must be the one expected from the Parser. In case of sweating signal, Everion ca
 
 <a name="proc"></a>
 # Data Processing
-![esquema3](https://user-images.githubusercontent.com/17572800/91544652-4ee3d200-e920-11ea-88f4-6c4ca1030944.png)
+![esquema2](https://user-images.githubusercontent.com/17572800/91544652-4ee3d200-e920-11ea-88f4-6c4ca1030944.png)
 
-There are 4 Parsers. The following table describes the input variables and the output features calculated in each Parser.
+There are 4 Parsers. The TEMPparser only returns the input. The ACCparser does not work correctly yet. 
+The following table describes the input variables and the output features calculated in each Parser. 
 
 Input Variable | Parser | Output
 :---: | :---: | :---:
@@ -79,7 +80,8 @@ Input Variable | Parser | Output
 *ACC* | `ACCparser` | *HAND, ACT*
 *TEMP*| `TEMPparser`| *TEMP*
 
-
+In the last configuration step, all the Parsers to be used must be declared and also the output features to be saved. In case all the features are needed, 
+it is not necessary to list them, only write '*' instead.
 
 
 
