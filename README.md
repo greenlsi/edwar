@@ -9,10 +9,12 @@ The processing focuses on features extraction, but it can include signal error
 detection, and signal correction or reconstruction. This core version allows working with
 electrodermal activity (EDA), interbeat intervals (IBI), accelerometry (ACC) and temperature (TEMP).
 
-The results can be saved as an output variable, CSV files or in a data base. To contribute, visit the wiki.
+The results can be saved as an output variable, CSV files or in a database. To contribute, visit the wiki.
 
 # Starting with EDWAR
-This core version is based on three modules: Loaders, Parsers and Savers. User specifies which modules to use in a given configuration. 
+This core version is based on three modules: Loaders, Parsers and Savers. Loaders read input files from a specific device, so every device has its own Loader. 
+Parsers process these data to calculate features and, finally, results can be saved according to the Saver module employed.
+User specifies which modules to use in a given configuration (except Saver modules). 
 The following command lets install the configuration file needed.
 ```ruby
 edwar.install.structure_cfg()
@@ -32,7 +34,17 @@ Finally, user can execute the system with the given configuration:
 ```ruby
 edwar.Run(device='my_device', path='path_to_data_files').my_saver_module()
 ```
-The supermodule Run interconects all modules according th the following schema:
+There are three different Saver modules:
+
+Saver module | Purpose
+:--- | :---
+*get_output()* |  to save data as aoutput variable
+*to_csv()* |  to save data in CSV file
+*to_database()* | to save data in a given database
+
+To get more information about, read [Data Saving](#save).
+
+The supermodule Run interconects all modules according the following schema:
 
 
 ![general_structure1](https://user-images.githubusercontent.com/17572800/87205868-b3af8280-c308-11ea-9c8f-95d100f4343e.png)
@@ -62,7 +74,7 @@ For the E4 Loader, only the name of the file must be introduced, with no extensi
 Everion file name are long, so the user must introduce only a part, the signal name preferably. For example, for the following IBI file:
 bop_1533550392847_IBI_5b2cc93e71b0710100a724db_1533160800_1533247259.csv -> IBI
 
-Everion files have several columns with IDs, timestamps, quality of measure... The Loader reads the variable values and timestamps columns. The variable name
+Everion files have several columns with IDs, timestamps, quality of measure... The Loader reads the variable value and timestamp columns. The variable name
 must be the one expected from the Parser. In case of sweating signal, Everion calls it GSR (Galvanic Skin Response), others use SC (Skin Conductivity), but the Parser module expects a variable called EDA.
 
 
@@ -82,6 +94,48 @@ Input Variable | Parser | Output
 
 In the last configuration step, all the Parsers to be used must be declared and also the output features to be saved. In case all the features are needed, 
 it is not necessary to list them, only write '*' instead.
+
+
+<a name="save"></a>
+# Data Saving
+To save the output features, there are three posibilities:
+
+### As output variable
+```ruby
+edwar.Run(device='my_device', path='path_to_data_files').get_output()
+```
+The calculated features are presented in a list of [DataFrames](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html). Every dataframe
+has the results from each Parser. Some Parsers generate more than one dataframe. Each dataframe has the Parser name that has generated it (*parser_name*) and the sampling
+frequency (*frequency*). Every dataframe has only the features selected in the configuration.
+
+### As CSV file
+```ruby
+edwar.Run(device='my_device', path='path_to_data_files').to_csv(path='path_to_output_directory')
+```
+Selected output features are saved in several CSV files, one per dataframe. In every CSV file there are a index column with datetimes and one or more feature value columns.
+As parameter of the Saver module, directory to save data must be specified.
+
+### In database
+```ruby
+edwar.Run(device='my_device', path='path_to_data_files').to_database()
+```
+Selected output features are saved in a database. To use this Saver, a database configuration must be done previously. 
+The following command lets install the configuration file needed.
+```ruby
+edwar.install.database_cfg()
+```
+In this configuration, user introduces database information such as IP, port, user, password... All data are sensible, so this file is encrypted with 
+[AES](https://es.wikipedia.org/wiki/Advanced_Encryption_Standard) and uses the database password for the given user to decrypt the file (so in every 
+execution of this Saver module, the password is required to save data in desired database). 
+
+To change any data, use the following command.
+```ruby
+edwar.configure.database()
+```
+
+This module has an optional parameter, *data_to_db_function*, which is needed when the default function to adapt the output to the database structure does 
+not work properly.
+
 
 
 
