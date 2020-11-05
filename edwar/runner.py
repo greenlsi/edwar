@@ -38,6 +38,8 @@ class Run(AbstractRun):
                 self.settings = v
             elif k == 'loader':  # Optional temporal use of a loader not specified in configuration
                 self.loader = v
+            elif k == 'file_name':
+                self.file_name = v
             else:
                 self.parsers.update({k: v})  # Optional temporal use of a parser not specified in configuration
 
@@ -205,7 +207,10 @@ class Run(AbstractRun):
                 col += c + '-'
             col = col[:-1]
             date1 = output.index[0].strftime("%Y%m%dT%H%M%S")
-            file_name = output.parser_name + '_' + col + '_' + date1 + '_' + date2 + '.csv'
+            if hasattr(self, 'file_name'):
+                file_name = output.parser_name + '_' + self.file_name + '.csv'
+            else:
+                file_name = output.parser_name + '_' + col + '_' + date1 + '_' + date2 + '.csv'
             try:
                 save_in_csv(path, file_name, output)
             except Exception as err:
