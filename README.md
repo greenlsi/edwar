@@ -114,7 +114,7 @@ edwar.Run(device='my_device', path='path_to_data_files').to_csv(path='path_to_ou
 ```
 Selected output features are saved in several CSV files, one per dataframe. In every CSV file there are a index column with datetimes and one or more feature value columns.
 As parameter of the Saver module, directory to save data must be specified.
-The standar name of the file is "XXXparser_x1_x2_..._xn_date1_date2.csv" where "XXX" is the name of the parser, "x1,x2..., xn" are the variables in the file, "date1" is the time and date when de data was collected and "date2" is the time and date when the file was created. The format fo date1 and date2 are: AAAAMMDDTHHMMSS. (AAAA - year, MM - month, DD - day, T - separator, HH - hour, MM - minute, SS - second). If you want change the name of the file, add file_name="name_you_want" as parameter of the Run method.
+The standard name of the file is "XXXparser_x1_x2_..._xn_date1_date2.csv" where "XXX" is the name of the parser, "x1,x2..., xn" are the variables in the file, "date1" is the time and date when de data was collected and "date2" is the time and date when the file was created. The format fo date1 and date2 are: AAAAMMDDTHHMMSS. (AAAA - year, MM - month, DD - day, T - separator, HH - hour, MM - minute, SS - second). If you want change the name of the file, add file_name="name_you_want" as parameter of the Run method.
 
 ### In database
 ```ruby
