@@ -38,8 +38,6 @@ class Run(AbstractRun):
                 self.settings = v
             elif k == 'loader':  # Optional temporal use of a loader not specified in configuration
                 self.loader = v
-            elif k == 'file_name':
-                self.file_name = v
             else:
                 self.parsers.update({k: v})  # Optional temporal use of a parser not specified in configuration
 
@@ -186,11 +184,15 @@ class Run(AbstractRun):
         self.output = self.adapt_output(self.settings, self.device, data_out, parsers_out)
         return self.output
 
-    def to_csv(self, path: str):
+    def to_csv(self, path: str,  **kwargs):
         log = logging.getLogger('EDWAR')
         now = datetime.now()
         date2 = now.strftime("%Y%m%dT%H%M%S")
         outputs = self.get_output()
+        for k, v in kwargs.items():
+            if k == 'csv_name':
+                csv_name = v   # Optional name for csv file
+
         if not os.path.exists(path):
             try:
                 os.mkdir(path)
@@ -207,8 +209,8 @@ class Run(AbstractRun):
                 col += c + '-'
             col = col[:-1]
             date1 = output.index[0].strftime("%Y%m%dT%H%M%S")
-            if hasattr(self, 'file_name'):
-                file_name = output.parser_name + '_' + self.file_name + '.csv'
+            if 'csv_name' in kwargs:
+                file_name = output.parser_name + '_' + csv_name + '.csv'
             else:
                 file_name = output.parser_name + '_' + col + '_' + date1 + '_' + date2 + '.csv'
             try:
