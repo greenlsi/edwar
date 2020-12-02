@@ -45,7 +45,7 @@ def detect_arts(eda_data, classifier_list):
                          'aboveZero_1s_3', 'max_Hs_1', 'max_Hs_2', 'mean_Hs_1', 'mean_Hs_2', 'std_Hs_1', 'std_Hs_2',
                          'median_Hs_1', 'median_Hs_2', 'aboveZero_Hs_1', 'aboveZero_Hs_2']
     base = eda_data.index[0].second + eda_data.index[0].microsecond / 1000
-    features1 = eda_data.groupby(pd.Grouper(freq='5s', base=base)).apply(__create_feature_df)
+    features1 = eda_data.groupby(pd.Grouper(freq='5s', origin=base)).apply(__create_feature_df)
     features = pd.DataFrame(features1.values.tolist(), columns=all_feature_names, index=features1.index)
     for x in range(len(classifier_list)):
         classifier_name = classifier_list[x]

@@ -5,6 +5,7 @@ import functools
 from .ibi import check_ibi, calculate_hr, calculate_josue_hr
 from .eda import process_eda
 from .acc import predict_activity, generate_features
+from .stress import generate_data, predict_stress
 from .parameters import *
 
 
@@ -94,3 +95,26 @@ class TEMPparser(Parser):
         self.check_input(self.__class__.__name__, data, self.inputs, self.optional_inputs)
         out = self.adapt_input(data)
         return out
+
+
+class STRESSparser(Parser):
+    def __init__(self):
+        super().__init__(inputs={'EDA': 'uS', 'BVP': None, 'x': 'g', 'y': 'g', 'z': 'g', 'TEMP': 'ºC'},
+                         outputs={'stress': None})
+
+    def run(self, data):
+        self.check_input(self.__class__.__name__, data, self.inputs, self.optional_inputs)
+        eda = bvp = acc = temp = pd.DataFrame()
+        for df in data:
+            if 'EDA' in df.columns:
+                eda = df
+                eda.frequency = df.frequency
+            if 'BVP' in df.columns:
+                bvp = df
+            if all(coor in df.columns for coor in ['x', 'y', 'z']):
+                acc = df
+            if 'TEMP' in df.columns:
+                temp = df
+        output = generate_data(eda, bvp, acc, temp)
+        stress = predict_stress(output)
+        return stress

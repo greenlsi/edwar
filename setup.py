@@ -1,4 +1,4 @@
-xfrom setuptools import setup, find_packages
+from setuptools import setup, find_packages
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
@@ -28,7 +28,7 @@ setup(
           'scipy',          
           'mysql-connector-python',
           'ledapy',
-          'cvxopt'      
+          'cvxopt', 'joblib'
   ], # 'mysql' used to be neceessary
   classifiers=[
     'Development Status :: 3 - Alpha',      # Chose either "3 - Alpha", "4 - Beta" or "5 - Production/Stable" as the
