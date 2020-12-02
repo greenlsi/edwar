@@ -6,7 +6,7 @@ with open("README.md", "r") as fh:
 setup(
   name='edwar',         # How you named your package folder (MyLib)
   packages=find_packages(),   # Chose the same as "name"
-  version='0.9.1.2',      # Start with a small number and increase it with every change you make
+  version='1.0',      # Start with a small number and increase it with every change you make
   license='MIT',        # Chose a license
   include_package_data=True,
   description='signal Error Detection for WBSN And data1 Recovery',   # Give a short description about your library
