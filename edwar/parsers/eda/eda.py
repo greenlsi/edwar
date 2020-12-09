@@ -24,13 +24,16 @@ def __calculate_eda_features(eda_data):
 
 
 def process_eda(eda_data_in, classifier=None):
+
     eda_data = eda_data_in.copy()
+    print(eda_data.shape)
     eda_data.frequency = eda_data_in.frequency
     eda_data = frequency_conversion(eda_data, 8)
     if classifier is None:
         classifier = ['Binary']
     eda_data['filtered_eda'] = butter_lowpass_filter(eda_data['EDA'].values, 1.0, eda_data.frequency, 6)
     eda_data = detect_arts(eda_data, classifier)
+
     if EDA_CORRECTION:
         eda_data = correct_eda(eda_data, classifier)
     eda_data = frequency_conversion(eda_data, OUTPUT_FREQUENCY)

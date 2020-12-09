@@ -77,8 +77,7 @@ def eda_get_samples(data):
     data1 = data[['EDA']].copy()
     data1.frequency = data.frequency
     data1 = compute_eda_features(data1)
-    base = data1.index[0].second + data1.index[0].microsecond / 1000
-    features1 = data1.groupby(pd.Grouper(freq='5s', origin=base)).apply(get_window_stats)
+    features1 = data1.groupby(pd.Grouper(freq='5s', origin=data.index[0])).apply(get_window_stats)
     column_names = ['SCR_mean', 'SMNA_mean', 'SCL_mean', 'SCR_std', 'SMNA_std', 'SCL_std', 'SCR_min', 'SMNA_min',
                     'SCL_min', 'SCR_max', 'SMNA_max', 'SCL_max']
     features = pd.DataFrame(features1.values.tolist(), columns=column_names, index=features1.index)
@@ -87,9 +86,8 @@ def eda_get_samples(data):
 
 def bvp_get_samples(data):
     data1 = data[['BVP']].copy()
-    base = data1.index[0].second + data1.index[0].microsecond / 1000
-    features1 = data1.groupby(pd.Grouper(freq='5s', origin=base)).apply(get_window_stats)
-    features2 = data1['BVP'].groupby(pd.Grouper(freq='5s', origin=base)).apply(get_peak_freq)
+    features1 = data1.groupby(pd.Grouper(freq='5s', origin=data.index[0])).apply(get_window_stats)
+    features2 = data1['BVP'].groupby(pd.Grouper(freq='5s', origin=data.index[0])).apply(get_peak_freq)
     column_names = ['BVP_mean', 'BVP_std', 'BVP_min', 'BVP_max']
     features = pd.DataFrame(features1.values.tolist(), columns=column_names, index=features1.index)
     features['BVP_peak_freq'] = features2
@@ -99,8 +97,7 @@ def bvp_get_samples(data):
 def acc_get_samples(data):
     data1 = data[['x', 'y', 'z']].copy()
     data1['E'] = get_net_accel(data1)
-    base = data1.index[0].second + data1.index[0].microsecond / 1000
-    featuresa = data1.groupby(pd.Grouper(freq='5s', origin=base)).apply(get_window_stats)
+    featuresa = data1.groupby(pd.Grouper(freq='5s', origin=data.index[0])).apply(get_window_stats)
     column_names = ['x_mean', 'y_mean', 'z_mean', 'E_mean', 'x_std', 'y_std', 'z_std', 'E_std', 'x_min', 'y_min',
                     'z_min', 'E_min', 'x_max', 'y_max', 'z_max', 'E_max']
     features = pd.DataFrame(featuresa.values.tolist(), columns=column_names, index=featuresa.index)
@@ -108,7 +105,7 @@ def acc_get_samples(data):
     data1['diff_y'] = abs(data1['y'].diff())
     data1['diff_z'] = abs(data1['z'].diff())
     data1 = data1.fillna(0)
-    featuresb = data1[['diff_x', 'diff_y', 'diff_z']].groupby(pd.Grouper(freq='5s', origin=base)).max()
+    featuresb = data1[['diff_x', 'diff_y', 'diff_z']].groupby(pd.Grouper(freq='5s', origin=data.index[0])).max()
     column_names1 = ['max_diff_x', 'max_diff_y', 'max_diff_z']
     features1 = pd.DataFrame(featuresb.values.tolist(), columns=column_names1, index=featuresb.index)
     return pd.concat([features, features1], axis=1)
@@ -116,11 +113,10 @@ def acc_get_samples(data):
 
 def temp_get_samples(data):
     data1 = data[['TEMP']].copy()
-    base = data1.index[0].second + data1.index[0].microsecond / 1000
-    features1 = data1.groupby(pd.Grouper(freq='5s', origin=base)).apply(get_window_stats)
+    features1 = data1.groupby(pd.Grouper(freq='5s', origin=data.index[0])).apply(get_window_stats)
     column_names = ['TEMP_mean', 'TEMP_std', 'TEMP_min', 'TEMP_max']
     features = pd.DataFrame(features1.values.tolist(), columns=column_names, index=features1.index)
-    features['TEMP_slope'] = data1['TEMP'].groupby(pd.Grouper(freq='5s', origin=base)).apply(get_slope)
+    features['TEMP_slope'] = data1['TEMP'].groupby(pd.Grouper(freq='5s', origin=data.index[0])).apply(get_slope)
 
     return features
 

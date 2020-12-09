@@ -8,13 +8,14 @@ def correct_eda(eda_data, classifier):
     eda = eda_data['EDA'].values
     f = eda_data.frequency
     k = 0
+    level = 7
     olen = len(eda)
-    while k*np.power(2, 7) < olen:
+    while k*np.power(2, level) < olen:
         k = k + 1
-    diff = k*np.power(2, 7) - olen
+    diff = k*np.power(2, level) - olen
     eda = np.pad(eda, (0, diff), 'constant', constant_values=0)
     type_of_wavelet = 'haar'
-    coeff = pywt.swt(eda, type_of_wavelet, 7, 0, 0)
+    coeff = pywt.swt(eda, type_of_wavelet, level=level, start_level=0, axis=0)
     # od1 = coeff[0][1][0:olen]
     for i in range(0, len(coeff[0][0])):
         for j in range(0, len(coeff)):
