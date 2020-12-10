@@ -26,7 +26,6 @@ def __calculate_eda_features(eda_data):
 def process_eda(eda_data_in, classifier=None):
 
     eda_data = eda_data_in.copy()
-    print(eda_data.shape)
     eda_data.frequency = eda_data_in.frequency
     eda_data = frequency_conversion(eda_data, 8)
     if classifier is None:
