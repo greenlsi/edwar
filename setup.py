@@ -9,7 +9,6 @@ setup(
   version='1.0',      # Start with a small number and increase it with every change you make
   license='MIT',        # Chose a license
   include_package_data=True,
-  package_data={'edwar': ['edwar/parsers/acc/models/*.sav']},
   description='signal Error Detection for WBSN And data1 Recovery',   # Give a short description about your library
   long_description=long_description,
   long_description_content_type="text/markdown",
