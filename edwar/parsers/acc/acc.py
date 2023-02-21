@@ -62,9 +62,13 @@ def predict_activity(features):
                                               'models/finalized_raw_model_leftHand.sav'))
     model_act_right = joblib.load(os.path.join(script_dir,
                                                'models/finalized_raw_model_rightHand.sav'))
-    result = model_hand.predict(features)
-    result1 = model_act_left.predict(features)
-    result2 = model_act_right.predict(features)
+    # Fill nan values for model prediction
+    features.fillna(method='bfill', inplace=True)
+
+    # Predict activity
+    result = model_hand.predict(features.values)
+    result1 = model_act_left.predict(features.values)
+    result2 = model_act_right.predict(features.values)
     features['hand'] = ['rightHand' if x < 1.5 else 'leftHand' for x in result]
     features['activity'] = result1
     features['activity2'] = result2
