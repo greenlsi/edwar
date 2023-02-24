@@ -62,6 +62,14 @@ def predict_activity(features):
                                               'models/finalized_raw_model_leftHand.sav'))
     model_act_right = joblib.load(os.path.join(script_dir,
                                                'models/finalized_raw_model_rightHand.sav'))
+    # Fill nan values for model prediction
+    # features.fillna(method='bfill', inplace=True)
+    if features.isna().any().any():
+        missing_is = np.where(features.isna().any(axis=1))[0]
+        if len(missing_is) == 1 and missing_is[0] == len(features) - 1:
+            features = features[:-1]
+
+    # Predict activity
     result = model_hand.predict(features)
     result1 = model_act_left.predict(features)
     result2 = model_act_right.predict(features)
