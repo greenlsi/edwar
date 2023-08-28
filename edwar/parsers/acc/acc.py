@@ -56,37 +56,40 @@ def filter_acc_data(data_in):
 
 def predict_activity(features):
     script_dir = os.path.dirname(__file__)
-    model_hand = joblib.load(os.path.join(script_dir,
-                                          'models/finalized_raw_model_hand_selection.sav'))
-    model_act_left = joblib.load(os.path.join(script_dir,
-                                              'models/finalized_raw_model_leftHand.sav'))
-    model_act_right = joblib.load(os.path.join(script_dir,
-                                               'models/finalized_raw_model_rightHand.sav'))
-    # Fill nan values for model prediction
-    # features.fillna(method='bfill', inplace=True)
-    if features.isna().any().any():
-        missing_is = np.where(features.isna().any(axis=1))[0]
-        if len(missing_is) == 1 and missing_is[0] == len(features) - 1:
-            features = features[:-1]
+    try:
+        model_hand = joblib.load(os.path.join(script_dir,
+                                            'models/finalized_raw_model_hand_selection.sav'))
+        model_act_left = joblib.load(os.path.join(script_dir,
+                                                'models/finalized_raw_model_leftHand.sav'))
+        model_act_right = joblib.load(os.path.join(script_dir,
+                                                'models/finalized_raw_model_rightHand.sav'))
+        # Fill nan values for model prediction
+        # features.fillna(method='bfill', inplace=True)
+        if features.isna().any().any():
+            missing_is = np.where(features.isna().any(axis=1))[0]
+            if len(missing_is) == 1 and missing_is[0] == len(features) - 1:
+                features = features[:-1]
 
-    # Predict activity
-    result = model_hand.predict(features)
-    result1 = model_act_left.predict(features)
-    result2 = model_act_right.predict(features)
-    features['hand'] = ['rightHand' if x < 1.5 else 'leftHand' for x in result]
-    features['activity'] = result1
-    features['activity2'] = result2
-    features.loc[features['hand'] == 'rightHand', 'activity'] = features.loc[features['hand'] == 'rightHand',
-                                                                             'activity2']
-    features['activity'] = features['activity'].round()
-    features.loc[features['activity'] == 1, 'activity'] = 'layingDown'
-    features.loc[features['activity'] == 2, 'activity'] = 'sitting'
-    features.loc[features['activity'] == 3, 'activity'] = 'standing'
-    features.loc[features['activity'] == 4, 'activity'] = 'walking'
-    features.loc[features['activity'] == 5, 'activity'] = 'upstairs'
-    features.loc[features['activity'] == 6, 'activity'] = 'downstairs'
-    features.loc[features['activity'] == 7, 'activity'] = 'bendingDown'
-    features.loc[features['activity'] == 8, 'activity'] = 'jogging'
-    features = features.drop(['activity2'], axis=1)
-    features.frequency = 0.2
+        # Predict activity
+        result = model_hand.predict(features)
+        result1 = model_act_left.predict(features)
+        result2 = model_act_right.predict(features)
+        features['hand'] = ['rightHand' if x < 1.5 else 'leftHand' for x in result]
+        features['activity'] = result1
+        features['activity2'] = result2
+        features.loc[features['hand'] == 'rightHand', 'activity'] = features.loc[features['hand'] == 'rightHand',
+                                                                                'activity2']
+        features['activity'] = features['activity'].round()
+        features.loc[features['activity'] == 1, 'activity'] = 'layingDown'
+        features.loc[features['activity'] == 2, 'activity'] = 'sitting'
+        features.loc[features['activity'] == 3, 'activity'] = 'standing'
+        features.loc[features['activity'] == 4, 'activity'] = 'walking'
+        features.loc[features['activity'] == 5, 'activity'] = 'upstairs'
+        features.loc[features['activity'] == 6, 'activity'] = 'downstairs'
+        features.loc[features['activity'] == 7, 'activity'] = 'bendingDown'
+        features.loc[features['activity'] == 8, 'activity'] = 'jogging'
+        features = features.drop(['activity2'], axis=1)
+        features.frequency = 0.2
+    except:
+        features = pd.DataFrame([])
     return features
