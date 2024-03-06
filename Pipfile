@@ -1,0 +1,25 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+numpy="*"
+pandas="*"
+matplotlib="*"
+datetime="*"
+configparser="*"
+pycryptodome="*"
+PyWavelets="*"
+scipy="*"          
+mysql-connector-python="*"
+ledapy="*"
+cvxopt ="== 1.2.6" 
+scikit-learn="*"
+joblib="*"
+
+[dev-packages]
+autopep8 = "*"
+
+[requires]
+python_version = "*"
