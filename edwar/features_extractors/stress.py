@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import scipy.signal as scisig
 import scipy.stats
-from edwar.parsers.eda import cvxEDA
+from edwar.features_extractors import cvxEDA
 from edwar.parsers.utils import frequency_conversion
 import os
 

@@ -2,7 +2,7 @@ import numpy as np
 # import matplotlib.pyplot as plt
 # from datetime import timedelta
 # from matplotlib.dates import DateFormatter
-from .cvxEDA import cvxEDA
+#from ...features_extractors.cvxEDA import cvxEDA
 from .art_detect import detect_arts
 from .eda_wavelet_thresholding import correct_eda
 from ..utils import butter_lowpass_filter, frequency_conversion
@@ -40,12 +40,14 @@ def process_eda(eda_data_in, classifier=None):
     eda_data['EDA'] = (eda_data['EDA'] - eda_data['EDA'].mean()) / eda_data['EDA'].std()
     eda_data['filtered_eda'] = (eda_data['filtered_eda'] -
                                 eda_data['filtered_eda'].mean()) / eda_data['filtered_eda'].std()
+    '''
     r, p, t, l, d, e, obj = cvxEDA(eda_data['EDA'], 1. / eda_data.frequency, options={'reltol': 1e-9,
                                                                                       'show_progress': False})
     eda_data['SCR'] = r
     # EDAdata['tonic'] = EDAdata['filtered'] - EDAdata['phasic']
     eda_data['SCL'] = t
     eda_data['SMNA'] = p
+    '''
     return eda_data
 
 
